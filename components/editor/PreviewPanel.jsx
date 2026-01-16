@@ -3,7 +3,14 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import Toolbar from './Toolbar';
 import TableDialog from './TableDialog';
-import TableFloatingToolbar from './TableFloatingToolbar';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import TablePropertiesDialog from './TablePropertiesDialog';
 import CellPropertiesDialog from './CellPropertiesDialog';
 import RowPropertiesDialog from './RowPropertiesDialog';
@@ -18,7 +25,6 @@ export default function PreviewPanel({ html, onHtmlChange }) {
   const [selectedCells, setSelectedCells] = useState([]);
   const [selectedRow, setSelectedRow] = useState(null);
   const [currentTable, setCurrentTable] = useState(null);
-  const [toolbarPosition, setToolbarPosition] = useState(null);
   const [resizing, setResizing] = useState(null);
   const [isSelecting, setIsSelecting] = useState(false);
 
@@ -252,20 +258,29 @@ export default function PreviewPanel({ html, onHtmlChange }) {
       const table = cell.closest('table');
       setCurrentTable(table);
       
-      // Position floating toolbar
-      const rect = cell.getBoundingClientRect();
-      const editorRect = editorRef.current.getBoundingClientRect();
-      setToolbarPosition({
-        x: rect.left,
-        y: rect.top - 50,
-      });
     } else {
       // Clicked outside table
       selectedCells.forEach(c => c.classList.remove('table-cell-selected'));
       setSelectedCells([]);
       setSelectedCell(null);
       setCurrentTable(null);
-      setToolbarPosition(null);
+    }
+  };
+
+  const handleCellContextMenu = (e) => {
+    const cell = e.target.closest('td, th');
+    if (cell) {
+      selectedCells.forEach(c => c.classList.remove('table-cell-selected'));
+      cell.classList.add('table-cell-selected');
+      setSelectedCells([cell]);
+      setSelectedCell(cell);
+      const table = cell.closest('table');
+      setCurrentTable(table);
+    } else {
+      selectedCells.forEach(c => c.classList.remove('table-cell-selected'));
+      setSelectedCells([]);
+      setSelectedCell(null);
+      setCurrentTable(null);
     }
   };
 
@@ -346,7 +361,6 @@ export default function PreviewPanel({ html, onHtmlChange }) {
     
     row.remove();
     setSelectedCell(null);
-    setToolbarPosition(null);
     handleInput();
   };
 
@@ -367,7 +381,6 @@ export default function PreviewPanel({ html, onHtmlChange }) {
     });
     
     setSelectedCell(null);
-    setToolbarPosition(null);
     handleInput();
   };
 
@@ -487,7 +500,6 @@ export default function PreviewPanel({ html, onHtmlChange }) {
       currentTable.remove();
       setSelectedCell(null);
       setCurrentTable(null);
-      setToolbarPosition(null);
       selectedCells.forEach(c => c.classList.remove('table-cell-selected'));
       setSelectedCells([]);
       handleInput();
@@ -556,18 +568,102 @@ export default function PreviewPanel({ html, onHtmlChange }) {
       />
       
       <div className="flex-1 overflow-auto p-6 bg-slate-50">
-        <div
-          ref={editorRef}
-          contentEditable
-          suppressContentEditableWarning
-          onInput={handleInput}
-          onClick={handleCellClick}
-          className="min-h-full bg-white p-8 shadow-sm border rounded-lg outline-none prose prose-sm max-w-none"
-          style={{
-            minHeight: '400px',
-            lineHeight: '1.6',
-          }}
-        />
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
+            <div
+              ref={editorRef}
+              contentEditable
+              suppressContentEditableWarning
+              onInput={handleInput}
+              onClick={handleCellClick}
+              onContextMenu={handleCellContextMenu}
+              className="min-h-full bg-white p-8 shadow-sm border rounded-lg outline-none prose prose-sm max-w-none"
+              style={{
+                minHeight: '400px',
+                lineHeight: '1.6',
+              }}
+            />
+          </ContextMenuTrigger>
+          <ContextMenuContent className="w-56">
+            <ContextMenuLabel>Table Editing</ContextMenuLabel>
+            <ContextMenuSeparator />
+            <ContextMenuItem disabled={!selectedCell} onSelect={() => insertRow('above')}>
+              Insert Row Above
+            </ContextMenuItem>
+            <ContextMenuItem disabled={!selectedCell} onSelect={() => insertRow('below')}>
+              Insert Row Below
+            </ContextMenuItem>
+            <ContextMenuItem disabled={!selectedCell} onSelect={() => insertColumn('left')}>
+              Insert Column Left
+            </ContextMenuItem>
+            <ContextMenuItem disabled={!selectedCell} onSelect={() => insertColumn('right')}>
+              Insert Column Right
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem disabled={!selectedCell} onSelect={deleteRow}>
+              Delete Row
+            </ContextMenuItem>
+            <ContextMenuItem disabled={!selectedCell} onSelect={deleteColumn}>
+              Delete Column
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem disabled={!canMerge} onSelect={mergeCells}>
+              Merge Cells
+            </ContextMenuItem>
+            <ContextMenuItem disabled={!canSplit} onSelect={splitCell}>
+              Split Cell
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem
+              disabled={!selectedCells.length}
+              onSelect={() => {
+                const color = prompt('Enter cell background color (e.g. #ffffff):', '#ffffff');
+                if (color) {
+                  setCellBackgroundColor(color);
+                }
+              }}
+            >
+              Set Cell Background
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem disabled={!selectedCells.length} onSelect={() => setTextAlign('left')}>
+              Align Text Left
+            </ContextMenuItem>
+            <ContextMenuItem disabled={!selectedCells.length} onSelect={() => setTextAlign('center')}>
+              Align Text Center
+            </ContextMenuItem>
+            <ContextMenuItem disabled={!selectedCells.length} onSelect={() => setTextAlign('right')}>
+              Align Text Right
+            </ContextMenuItem>
+            <ContextMenuItem disabled={!selectedCells.length} onSelect={() => setTextAlign('justify')}>
+              Align Text Justify
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem disabled={!selectedCells.length} onSelect={() => setVerticalAlign('top')}>
+              Align Cell Top
+            </ContextMenuItem>
+            <ContextMenuItem disabled={!selectedCells.length} onSelect={() => setVerticalAlign('middle')}>
+              Align Cell Middle
+            </ContextMenuItem>
+            <ContextMenuItem disabled={!selectedCells.length} onSelect={() => setVerticalAlign('bottom')}>
+              Align Cell Bottom
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem disabled={!selectedCells.length} onSelect={openCellProperties}>
+              Cell Properties
+            </ContextMenuItem>
+            <ContextMenuItem disabled={!selectedCell} onSelect={openRowProperties}>
+              Row Properties
+            </ContextMenuItem>
+            <ContextMenuItem disabled={!currentTable} onSelect={openTableProperties}>
+              Table Properties
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem disabled={!currentTable} onSelect={deleteTable}>
+              Delete Table
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
       </div>
       
       {/* Status bar */}
@@ -577,7 +673,7 @@ export default function PreviewPanel({ html, onHtmlChange }) {
           {selectedCells.length > 1 
             ? `${selectedCells.length} cells selected` 
             : selectedCell 
-            ? 'Cell selected - Use floating toolbar' 
+            ? 'Cell selected - Right click for table options'  
             : 'Click to edit'}
         </span>
       </div>
@@ -586,25 +682,6 @@ export default function PreviewPanel({ html, onHtmlChange }) {
         open={tableDialogOpen}
         onOpenChange={setTableDialogOpen}
         onInsert={insertTable}
-      />
-
-      <TableFloatingToolbar
-        position={toolbarPosition}
-        onInsertRow={insertRow}
-        onInsertColumn={insertColumn}
-        onDeleteRow={deleteRow}
-        onDeleteColumn={deleteColumn}
-        onMergeCells={mergeCells}
-        onSplitCell={splitCell}
-        onTableProperties={openTableProperties}
-        onDeleteTable={deleteTable}
-        onCellBackgroundColor={setCellBackgroundColor}
-        onCellProperties={openCellProperties}
-        onRowProperties={openRowProperties}
-        onTextAlign={setTextAlign}
-        onVerticalAlign={setVerticalAlign}
-        canMerge={canMerge}
-        canSplit={canSplit}
       />
 
       <TablePropertiesDialog
