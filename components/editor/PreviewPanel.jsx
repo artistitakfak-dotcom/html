@@ -56,28 +56,35 @@ export default function PreviewPanel({ html, onHtmlChange }) {
     }
     
     handleInput();
+  const wrapSelectionWithSpan = (styleUpdater) => {
+    const selection = window.getSelection();
+    if (!selection.rangeCount || selection.isCollapsed) return;
+
+    const range = selection.getRangeAt(0);
+    if (!editorRef.current?.contains(range.commonAncestorContainer)) return;
+
+    const span = document.createElement('span');
+    styleUpdater(span);
+    const contents = range.extractContents();
+    span.appendChild(contents);
+    range.insertNode(span);
+    selection.removeAllRanges();
+    const updatedRange = document.createRange();
+    updatedRange.selectNodeContents(span);
+    selection.addRange(updatedRange);
+    handleInput();
   };
 
   const handleFontSize = (size) => {
-    const selection = window.getSelection();
-    if (selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      const span = document.createElement('span');
+    wrapSelectionWithSpan((span) => {
       span.style.fontSize = `${size}px`;
-      range.surroundContents(span);
-      handleInput();
-    }
+    });
   };
 
   const handleFontFamily = (font) => {
-    const selection = window.getSelection();
-    if (selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      const span = document.createElement('span');
+    wrapSelectionWithSpan((span) => {
       span.style.fontFamily = font;
-      range.surroundContents(span);
-      handleInput();
-    }
+    });
   };
 
   const handleTextColor = (color) => {
