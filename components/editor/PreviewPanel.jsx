@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import Toolbar from './Toolbar';
 import TableDialog from './TableDialog';
