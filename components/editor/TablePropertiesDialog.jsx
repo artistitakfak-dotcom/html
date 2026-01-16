@@ -113,7 +113,7 @@ export default function TablePropertiesDialog({ open, onOpenChange, table, onApp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg bg-white">
         <DialogHeader>
           <DialogTitle>Table Properties</DialogTitle>
         </DialogHeader>
