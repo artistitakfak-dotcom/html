@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useRef, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Copy, Download, Trash2 } from 'lucide-react';
