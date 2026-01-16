@@ -62,6 +62,8 @@ export default function PreviewPanel({ html, onHtmlChange }) {
     }
     
     handleInput();
+      };
+
   const wrapSelectionWithSpan = (styleUpdater) => {
     const selection = window.getSelection();
     if (!selection.rangeCount || selection.isCollapsed) return;
