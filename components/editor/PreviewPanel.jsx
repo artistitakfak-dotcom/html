@@ -17,6 +17,7 @@ import RowPropertiesDialog from './RowPropertiesDialog';
 
 export default function PreviewPanel({ html, onHtmlChange }) {
   const editorRef = useRef(null);
+  const savedSelectionRef = useRef(null);
   const [tableDialogOpen, setTableDialogOpen] = useState(false);
   const [tablePropertiesOpen, setTablePropertiesOpen] = useState(false);
   const [cellPropertiesOpen, setCellPropertiesOpen] = useState(false);
@@ -125,6 +126,11 @@ export default function PreviewPanel({ html, onHtmlChange }) {
     if (!editorRef.current) return;
     
     editorRef.current.focus();
+    if (savedSelectionRef.current) {
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(savedSelectionRef.current);
+    }
     
     // Get current selection
     const selection = window.getSelection();
@@ -165,6 +171,7 @@ export default function PreviewPanel({ html, onHtmlChange }) {
       makeTablesResizable();
       handleInput();
     }, 10);
+    savedSelectionRef.current = null;
   };
 
   const makeTablesResizable = () => {
@@ -272,9 +279,12 @@ export default function PreviewPanel({ html, onHtmlChange }) {
   const handleCellContextMenu = (e) => {
     const cell = e.target.closest('td, th');
     if (cell) {
-      selectedCells.forEach(c => c.classList.remove('table-cell-selected'));
-      cell.classList.add('table-cell-selected');
-      setSelectedCells([cell]);
+      const isAlreadySelected = selectedCells.includes(cell);
+      if (!isAlreadySelected || selectedCells.length <= 1) {
+        selectedCells.forEach(c => c.classList.remove('table-cell-selected'));
+        cell.classList.add('table-cell-selected');
+        setSelectedCells([cell]);
+      }
       setSelectedCell(cell);
       const table = cell.closest('table');
       setCurrentTable(table);
@@ -533,6 +543,17 @@ export default function PreviewPanel({ html, onHtmlChange }) {
     setTablePropertiesOpen(true);
   };
 
+    const openTableDialog = () => {
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      if (editorRef.current?.contains(range.commonAncestorContainer)) {
+        savedSelectionRef.current = range.cloneRange();
+      }
+    }
+    setTableDialogOpen(true);
+  };
+
   const openCellProperties = () => {
     setCellPropertiesOpen(true);
   };
@@ -560,7 +581,7 @@ export default function PreviewPanel({ html, onHtmlChange }) {
       
       <Toolbar
         onFormat={execCommand}
-        onInsertTable={() => setTableDialogOpen(true)}
+        onInsertTable={openTableDialog}
         onUndo={() => execCommand('undo')}
         onRedo={() => execCommand('redo')}
         onFontSize={handleFontSize}
