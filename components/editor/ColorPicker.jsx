@@ -35,7 +35,7 @@ export default function ColorPicker({ value, onChange, trigger }) {
       <PopoverTrigger asChild>
         {trigger}
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-3" align="start">
+      <PopoverContent className="w-64 p-3 bg-white shadow-xl z-[80]" align="start">
         <div className="space-y-3">
           <div className="grid grid-cols-10 gap-1">
             {presetColors.map((color) => (
