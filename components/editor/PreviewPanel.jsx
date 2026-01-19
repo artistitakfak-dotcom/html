@@ -637,41 +637,6 @@ export default function PreviewPanel({ html, onHtmlChange }) {
               Split Cell
             </ContextMenuItem>
             <ContextMenuSeparator />
-            <ContextMenuItem
-              disabled={!selectedCells.length}
-              onSelect={() => {
-                const color = prompt('Enter cell background color (e.g. #ffffff):', '#ffffff');
-                if (color) {
-                  setCellBackgroundColor(color);
-                }
-              }}
-            >
-              Set Cell Background
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-            <ContextMenuItem disabled={!selectedCells.length} onSelect={() => setTextAlign('left')}>
-              Align Text Left
-            </ContextMenuItem>
-            <ContextMenuItem disabled={!selectedCells.length} onSelect={() => setTextAlign('center')}>
-              Align Text Center
-            </ContextMenuItem>
-            <ContextMenuItem disabled={!selectedCells.length} onSelect={() => setTextAlign('right')}>
-              Align Text Right
-            </ContextMenuItem>
-            <ContextMenuItem disabled={!selectedCells.length} onSelect={() => setTextAlign('justify')}>
-              Align Text Justify
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-            <ContextMenuItem disabled={!selectedCells.length} onSelect={() => setVerticalAlign('top')}>
-              Align Cell Top
-            </ContextMenuItem>
-            <ContextMenuItem disabled={!selectedCells.length} onSelect={() => setVerticalAlign('middle')}>
-              Align Cell Middle
-            </ContextMenuItem>
-            <ContextMenuItem disabled={!selectedCells.length} onSelect={() => setVerticalAlign('bottom')}>
-              Align Cell Bottom
-            </ContextMenuItem>
-            <ContextMenuSeparator />
             <ContextMenuItem disabled={!selectedCells.length} onSelect={openCellProperties}>
               Cell Properties
             </ContextMenuItem>
