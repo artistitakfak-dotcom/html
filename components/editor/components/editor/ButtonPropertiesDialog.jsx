@@ -140,7 +140,7 @@ export default function ButtonPropertiesDialog({ open, onOpenChange, button, onA
             <div className="flex gap-2">
               <div
                 className="w-10 h-10 rounded border border-slate-200"
-                style={{ backgroundColor: properties.backgroundColor || "#e2e8f0" }}
+                style={{ backgroundColor: properties.backgroundColor || "#d7490c" }}
               />
               <Input
                 id="buttonBg"
