@@ -36,6 +36,7 @@ import {
   Image,
   Code,
   Minus,
+  Square,
 } from 'lucide-react';
 import ColorPicker from './ColorPicker';
 
@@ -82,6 +83,7 @@ export default function Toolbar({
   onFontFamily,
   onTextColor,
   onBgColor,
+  onInsertButton,
 }) {
   return (
     <div className="flex items-center gap-1 p-2 border-b bg-white flex-wrap">
@@ -172,6 +174,7 @@ export default function Toolbar({
       {/* Table */}
       <ToolbarButton icon={Table} tooltip="Insert Table" onClick={onInsertTable} />
       
+      <ToolbarButton icon={Square} tooltip="Insert Button" onClick={onInsertButton} />
       <Separator orientation="vertical" className="h-6 mx-1" />
       
       {/* Other */}
