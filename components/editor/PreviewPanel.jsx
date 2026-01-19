@@ -17,7 +17,7 @@ import {
 import TablePropertiesDialog from './TablePropertiesDialog';
 import CellPropertiesDialog from './CellPropertiesDialog';
 import RowPropertiesDialog from './RowPropertiesDialog';
-import ButtonPropertiesDialog from './ButtonPropertiesDialog';
+import ButtonPropertiesDialog from './components/editor/ButtonPropertiesDialog';
 
 export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
   const editorRef = useRef(null);
