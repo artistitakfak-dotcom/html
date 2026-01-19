@@ -55,10 +55,12 @@ function ToolbarButton({ icon: Icon, tooltip, onClick, active }) {
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
+            type="button"
             variant={active ? "secondary" : "ghost"}
             size="sm"
             className="h-8 w-8 p-0"
             onClick={onClick}
+            onMouseDown={(event) => event.preventDefault()}
           >
             <Icon className="h-4 w-4" />
           </Button>
