@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { 
   PanelLeftClose, 
@@ -50,18 +50,57 @@ export default function Editor() {
   const [htmlCode, setHtmlCode] = useState(defaultHtml);
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [activeView, setActiveView] = useState('split');
+  const historyRef = useRef({ past: [], future: [] });
+  const isHistoryActionRef = useRef(false);
+
+  const recordHistory = useCallback((nextValue) => {
+    if (isHistoryActionRef.current) {
+      isHistoryActionRef.current = false;
+      return;
+    }
+    if (nextValue === htmlCode) {
+      return;
+    }
+    historyRef.current.past.push(htmlCode);
+    historyRef.current.future = [];
+  }, [htmlCode]);
 
   const handleCodeChange = useCallback((newCode) => {
+    recordHistory(newCode);
     setHtmlCode(newCode);
-  }, []);
+  }, [recordHistory]);
 
   const handlePreviewChange = useCallback((newHtml) => {
+    recordHistory(newHtml);
     setHtmlCode(newHtml);
-  }, []);
+  }, [recordHistory]);
 
   const handleClear = () => {
+    recordHistory('');
     setHtmlCode('');
   };
+
+  const handleUndo = useCallback(() => {
+    const { past } = historyRef.current;
+    if (!past.length) {
+      return;
+    }
+    const previousValue = past.pop();
+    historyRef.current.future.unshift(htmlCode);
+    isHistoryActionRef.current = true;
+    setHtmlCode(previousValue);
+  }, [htmlCode]);
+
+  const handleRedo = useCallback(() => {
+    const { future } = historyRef.current;
+    if (!future.length) {
+      return;
+    }
+    const nextValue = future.shift();
+    historyRef.current.past.push(htmlCode);
+    isHistoryActionRef.current = true;
+    setHtmlCode(nextValue);
+  }, [htmlCode]);
 
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-slate-100 to-slate-200">
@@ -152,7 +191,9 @@ export default function Editor() {
             <PreviewPanel
               html={htmlCode}
               onHtmlChange={handlePreviewChange}
-            />
+              onUndo={handleUndo}
+              onRedo={handleRedo}
+              />
           </motion.div>
         )}
       </div>
