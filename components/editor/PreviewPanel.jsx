@@ -216,7 +216,7 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
       <button
         type="button"
         data-editor-button="true"
-        style="background-color: #2563eb; color: #ffffff; padding: 8px 16px; border-radius: 6px; border: 1px solid transparent; display: inline-block; cursor: pointer;"
+        style="background-color: #d7490c; color: #ffffff; padding: 8px 16px; border-radius: 6px; border: 1px solid transparent; display: inline-block; cursor: pointer;"
       >
         Button
       </button>
