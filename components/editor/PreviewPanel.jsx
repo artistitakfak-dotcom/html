@@ -9,6 +9,9 @@ import {
   ContextMenuItem,
   ContextMenuLabel,
   ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import TablePropertiesDialog from './TablePropertiesDialog';
@@ -29,6 +32,23 @@ export default function PreviewPanel({ html, onHtmlChange }) {
   const [resizing, setResizing] = useState(null);
   const [isSelecting, setIsSelecting] = useState(false);
 
+    const normalizeTableImages = () => {
+    if (!editorRef.current) return;
+    const cells = editorRef.current.querySelectorAll('td, th');
+    cells.forEach(cell => {
+      const images = Array.from(cell.querySelectorAll('img'));
+      images.forEach(img => {
+        img.style.display = 'block';
+        img.style.margin = '0';
+      });
+
+      const trimmedContent = cell.textContent?.trim() || '';
+      if (images.length === 1 && trimmedContent === '') {
+        cell.style.padding = '0';
+      }
+    });
+  };
+
   // Update editor content when html prop changes (from code editor)
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== html) {
@@ -39,9 +59,10 @@ export default function PreviewPanel({ html, onHtmlChange }) {
 
   const handleInput = useCallback(() => {
     if (editorRef.current) {
+      normalizeTableImages();
       onHtmlChange(editorRef.current.innerHTML);
     }
-  }, [onHtmlChange]);
+  }, [normalizeTableImages, onHtmlChange]);
 
   const execCommand = (command, value = null) => {
     editorRef.current?.focus();
@@ -55,6 +76,7 @@ export default function PreviewPanel({ html, onHtmlChange }) {
       const url = prompt('Enter image URL:');
       if (url) {
         document.execCommand(command, false, url);
+              normalizeTableImages();
       }
     } else if (command === 'formatBlock') {
       document.execCommand(command, false, value);
@@ -63,7 +85,7 @@ export default function PreviewPanel({ html, onHtmlChange }) {
     }
     
     handleInput();
-      };
+    };
 
   const wrapSelectionWithSpan = (styleUpdater) => {
     const selection = window.getSelection();
@@ -396,21 +418,18 @@ export default function PreviewPanel({ html, onHtmlChange }) {
     handleInput();
   };
 
-  const mergeCells = () => {
-    if (selectedCells.length < 2) {
-      alert('Please select at least 2 cells to merge');
-      return;
-    }
-    
-    // Get all selected cells and find bounds
-    const firstCell = selectedCells[0];
+  const mergeSpecificCells = (cellsToMerge) => {
+    if (cellsToMerge.length < 2) return;
+
+    const firstCell = cellsToMerge[0];
     const table = firstCell.closest('table');
     const rows = Array.from(table.querySelectorAll('tr'));
-    
-    let minRow = Infinity, maxRow = -Infinity;
-    let minCol = Infinity, maxCol = -Infinity;
-    
-    selectedCells.forEach(cell => {
+    let minRow = Infinity;
+    let maxRow = -Infinity;
+    let minCol = Infinity;
+    let maxCol = -Infinity;
+
+    cellsToMerge.forEach(cell => {
       const row = cell.parentElement;
       const rowIndex = rows.indexOf(row);
       const colIndex = Array.from(row.children).indexOf(cell);
@@ -424,21 +443,18 @@ export default function PreviewPanel({ html, onHtmlChange }) {
     const rowSpan = maxRow - minRow + 1;
     const colSpan = maxCol - minCol + 1;
     
-    // Merge content
-    let mergedContent = selectedCells
+    let mergedContent = cellsToMerge
       .map(cell => cell.innerHTML)
       .filter(content => content.trim() && content !== '&nbsp;')
       .join(' ');
     
     if (!mergedContent) mergedContent = '&nbsp;';
     
-    // Set spans on first cell
     firstCell.rowSpan = rowSpan;
     firstCell.colSpan = colSpan;
     firstCell.innerHTML = mergedContent;
     
-    // Remove other cells
-    selectedCells.slice(1).forEach(cell => {
+    cellsToMerge.slice(1).forEach(cell => {
       if (cell !== firstCell) {
         cell.remove();
       }
@@ -449,6 +465,48 @@ export default function PreviewPanel({ html, onHtmlChange }) {
     firstCell.classList.add('table-cell-selected');
     
     handleInput();
+  };
+
+    const getAdjacentCell = (cell, direction) => {
+    if (!cell) return null;
+    const { rowIndex, cellIndex, table } = getCellPosition(cell);
+    const rows = Array.from(table.querySelectorAll('tr'));
+    const row = rows[rowIndex];
+
+    if (direction === 'left') {
+      return row?.children[cellIndex - 1] || null;
+    }
+    if (direction === 'right') {
+      return row?.children[cellIndex + 1] || null;
+    }
+    if (direction === 'up') {
+      const targetRow = rows[rowIndex - 1];
+      return targetRow?.children[cellIndex] || null;
+    }
+    if (direction === 'down') {
+      const targetRow = rows[rowIndex + 1];
+      return targetRow?.children[cellIndex] || null;
+    }
+    return null;
+  };
+
+  const mergeCells = () => {
+    if (selectedCells.length < 2) {
+      alert('Please select at least 2 cells to merge');
+      return;
+    }
+
+    mergeSpecificCells(selectedCells);
+  };
+
+  const mergeCellsInDirection = (direction) => {
+    if (!selectedCell) return;
+    const adjacentCell = getAdjacentCell(selectedCell, direction);
+    if (!adjacentCell) {
+      alert('No adjacent cell to merge in that direction');
+      return;
+    }
+    mergeSpecificCells([selectedCell, adjacentCell]);
   };
 
   const splitCell = () => {
@@ -501,6 +559,66 @@ export default function PreviewPanel({ html, onHtmlChange }) {
       }
     }
     
+    makeTablesResizable();
+    handleInput();
+  };
+
+    const splitCellInDirection = (direction) => {
+    if (!selectedCell) return;
+
+    const rowSpan = parseInt(selectedCell.rowSpan) || 1;
+    const colSpan = parseInt(selectedCell.colSpan) || 1;
+
+    if ((direction === 'left' || direction === 'right') && colSpan <= 1) {
+      alert('This cell cannot be split left or right');
+      return;
+    }
+
+    if ((direction === 'up' || direction === 'down') && rowSpan <= 1) {
+      alert('This cell cannot be split up or down');
+      return;
+    }
+
+    const { rowIndex, cellIndex, table } = getCellPosition(selectedCell);
+    const rows = Array.from(table.querySelectorAll('tr'));
+    const createCell = () => {
+      const newCell = document.createElement('td');
+      newCell.style.cssText = selectedCell.style.cssText;
+      newCell.innerHTML = '&nbsp;';
+      return newCell;
+    };
+
+    if (direction === 'left' || direction === 'right') {
+      const insertIndex = direction === 'left' ? cellIndex : cellIndex + 1;
+      for (let r = 0; r < rowSpan; r++) {
+        const targetRow = rows[rowIndex + r];
+        if (!targetRow) continue;
+        const cells = Array.from(targetRow.children);
+        const newCell = createCell();
+        if (cells[insertIndex]) {
+          targetRow.insertBefore(newCell, cells[insertIndex]);
+        } else {
+          targetRow.appendChild(newCell);
+        }
+      }
+      selectedCell.colSpan = colSpan - 1;
+    } else {
+      const targetRowIndex = direction === 'up' ? rowIndex : rowIndex + 1;
+      const targetRow = rows[targetRowIndex];
+      if (!targetRow) return;
+      const cells = Array.from(targetRow.children);
+      for (let c = 0; c < colSpan; c++) {
+        const newCell = createCell();
+        const insertAt = cellIndex + c;
+        if (cells[insertAt]) {
+          targetRow.insertBefore(newCell, cells[insertAt]);
+        } else {
+          targetRow.appendChild(newCell);
+        }
+      }
+      selectedCell.rowSpan = rowSpan - 1;
+    }
+
     makeTablesResizable();
     handleInput();
   };
@@ -567,6 +685,7 @@ export default function PreviewPanel({ html, onHtmlChange }) {
   };
 
   const canMerge = selectedCells.length >= 2;
+  const canDirectionalMerge = !!selectedCell;
   const canSplit = selectedCell && ((parseInt(selectedCell.rowSpan) || 1) > 1 || (parseInt(selectedCell.colSpan) || 1) > 1);
 
   return (
@@ -576,6 +695,13 @@ export default function PreviewPanel({ html, onHtmlChange }) {
           outline: 2px solid #3b82f6 !important;
           outline-offset: -2px;
           background-color: rgba(59, 130, 246, 0.1) !important;
+        }
+              .prose table {
+          background-color: #ffffff;
+        }
+        .prose table img {
+          display: block;
+          margin: 0;
         }
       `}</style>
       
@@ -607,7 +733,7 @@ export default function PreviewPanel({ html, onHtmlChange }) {
               }}
             />
           </ContextMenuTrigger>
-          <ContextMenuContent className="w-56">
+            <ContextMenuContent className="w-56 bg-white text-slate-900 shadow-xl z-[70]">
             <ContextMenuLabel>Table Editing</ContextMenuLabel>
             <ContextMenuSeparator />
             <ContextMenuItem disabled={!selectedCell} onSelect={() => insertRow('above')}>
@@ -630,12 +756,56 @@ export default function PreviewPanel({ html, onHtmlChange }) {
               Delete Column
             </ContextMenuItem>
             <ContextMenuSeparator />
-            <ContextMenuItem disabled={!canMerge} onSelect={mergeCells}>
-              Merge Cells
-            </ContextMenuItem>
-            <ContextMenuItem disabled={!canSplit} onSelect={splitCell}>
-              Split Cell
-            </ContextMenuItem>
+              <ContextMenuSub>
+              <ContextMenuSubTrigger disabled={!canDirectionalMerge}>
+                Merge Cells
+              </ContextMenuSubTrigger>
+              <ContextMenuSubContent className="bg-white text-slate-900 shadow-xl z-[70]">
+                <ContextMenuItem inset onSelect={() => mergeCellsInDirection('left')}>
+                  Merge Left
+                </ContextMenuItem>
+                <ContextMenuItem inset onSelect={() => mergeCellsInDirection('right')}>
+                  Merge Right
+                </ContextMenuItem>
+                <ContextMenuItem inset onSelect={() => mergeCellsInDirection('up')}>
+                  Merge Up
+                </ContextMenuItem>
+                <ContextMenuItem inset onSelect={() => mergeCellsInDirection('down')}>
+                  Merge Down
+                </ContextMenuItem>
+                {canMerge && (
+                  <>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem inset onSelect={mergeCells}>
+                      Merge Selected
+                    </ContextMenuItem>
+                  </>
+                )}
+              </ContextMenuSubContent>
+            </ContextMenuSub>
+            <ContextMenuSub>
+              <ContextMenuSubTrigger disabled={!canSplit}>
+                Split Cell
+              </ContextMenuSubTrigger>
+              <ContextMenuSubContent className="bg-white text-slate-900 shadow-xl z-[70]">
+                <ContextMenuItem inset onSelect={() => splitCellInDirection('left')}>
+                  Split Left
+                </ContextMenuItem>
+                <ContextMenuItem inset onSelect={() => splitCellInDirection('right')}>
+                  Split Right
+                </ContextMenuItem>
+                <ContextMenuItem inset onSelect={() => splitCellInDirection('up')}>
+                  Split Up
+                </ContextMenuItem>
+                <ContextMenuItem inset onSelect={() => splitCellInDirection('down')}>
+                  Split Down
+                </ContextMenuItem>
+                <ContextMenuSeparator />
+                <ContextMenuItem inset onSelect={splitCell}>
+                  Split Fully
+                </ContextMenuItem>
+              </ContextMenuSubContent>
+            </ContextMenuSub>
             <ContextMenuSeparator />
             <ContextMenuItem disabled={!selectedCells.length} onSelect={openCellProperties}>
               Cell Properties
