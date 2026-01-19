@@ -29,7 +29,7 @@ export default function TableDialog({ open, onOpenChange, onInsert }) {
     
     const borderStyle = showBorder ? '1px solid #d1d5db' : 'none';
     
-    let tableHtml = `<table style="border-collapse: collapse; width: auto;">\n`;
+    let tableHtml = `<table style="border-collapse: collapse; width: auto; background-color: #ffffff;">\n`;
     
     for (let r = 0; r < validRows; r++) {
       tableHtml += '  <tr>\n';
