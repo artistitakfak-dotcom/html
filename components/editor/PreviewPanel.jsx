@@ -17,6 +17,7 @@ import {
 import TablePropertiesDialog from './TablePropertiesDialog';
 import CellPropertiesDialog from './CellPropertiesDialog';
 import RowPropertiesDialog from './RowPropertiesDialog';
+import ButtonPropertiesDialog from './ButtonPropertiesDialog';
 
 export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
   const editorRef = useRef(null);
@@ -29,6 +30,8 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
   const [selectedCells, setSelectedCells] = useState([]);
   const [selectedRow, setSelectedRow] = useState(null);
   const [currentTable, setCurrentTable] = useState(null);
+  const [selectedButton, setSelectedButton] = useState(null);
+  const [buttonPropertiesOpen, setButtonPropertiesOpen] = useState(false);
   const [resizing, setResizing] = useState(null);
   const [isSelecting, setIsSelecting] = useState(false);
 
@@ -54,12 +57,14 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
     if (editorRef.current && editorRef.current.innerHTML !== html) {
       editorRef.current.innerHTML = html;
       makeTablesResizable();
+      makeButtonsResizable();
     }
   }, [html]);
 
   const handleInput = useCallback(() => {
     if (editorRef.current) {
       normalizeTableImages();
+      makeButtonsResizable();
       onHtmlChange(editorRef.current.innerHTML);
     }
   }, [normalizeTableImages, onHtmlChange]);
@@ -191,6 +196,51 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
     // Ensure changes are saved and tables are made resizable
     setTimeout(() => {
       makeTablesResizable();
+            makeButtonsResizable();
+      handleInput();
+    }, 10);
+    savedSelectionRef.current = null;
+  };
+
+  const insertButton = () => {
+    if (!editorRef.current) return;
+
+    editorRef.current.focus();
+    if (savedSelectionRef.current) {
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(savedSelectionRef.current);
+    }
+
+    const buttonHtml = `
+      <button
+        type="button"
+        data-editor-button="true"
+        style="background-color: #2563eb; color: #ffffff; padding: 8px 16px; border-radius: 6px; border: 1px solid transparent; display: inline-block; cursor: pointer;"
+      >
+        Button
+      </button>
+    `;
+
+    const success = document.execCommand('insertHTML', false, buttonHtml);
+    if (!success) {
+      const range = window.getSelection()?.getRangeAt(0);
+      if (range) {
+        const container = document.createElement('div');
+        container.innerHTML = buttonHtml.trim();
+        const button = container.firstChild;
+        range.deleteContents();
+        range.insertNode(button);
+        range.setStartAfter(button);
+        range.collapse(true);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
+
+    setTimeout(() => {
+      makeButtonsResizable();
       handleInput();
     }, 10);
     savedSelectionRef.current = null;
@@ -268,8 +318,82 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
     });
   };
 
+  const makeButtonsResizable = () => {
+    if (!editorRef.current) return;
+
+    const buttons = editorRef.current.querySelectorAll('button[data-editor-button="true"]');
+    buttons.forEach(button => {
+      button.style.position = 'relative';
+
+      const existingHandles = button.querySelectorAll('.button-resize-handle');
+      existingHandles.forEach(handle => handle.remove());
+
+      const handle = document.createElement('div');
+      handle.className = 'button-resize-handle';
+      handle.style.cssText = `
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        width: 10px;
+        height: 10px;
+        cursor: nwse-resize;
+        background: linear-gradient(135deg, transparent 50%, #0ea5e9 50%);
+        opacity: 0;
+        transition: opacity 0.2s;
+      `;
+
+      button.addEventListener('mouseenter', () => {
+        handle.style.opacity = '1';
+      });
+
+      button.addEventListener('mouseleave', () => {
+        if (!resizing) {
+          handle.style.opacity = '0';
+        }
+      });
+
+      handle.addEventListener('mousedown', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setResizing(true);
+
+        const startX = event.clientX;
+        const startY = event.clientY;
+        const startWidth = button.offsetWidth;
+        const startHeight = button.offsetHeight;
+
+        const onMouseMove = (moveEvent) => {
+          const deltaX = moveEvent.clientX - startX;
+          const deltaY = moveEvent.clientY - startY;
+
+          button.style.width = `${Math.max(60, startWidth + deltaX)}px`;
+          button.style.height = `${Math.max(24, startHeight + deltaY)}px`;
+        };
+
+        const onMouseUp = () => {
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+          setResizing(false);
+          handleInput();
+        };
+
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+
+      button.appendChild(handle);
+    });
+  };
+
   // Handle click on table cells for cell-specific actions
   const handleCellClick = (e) => {
+    const button = e.target.closest('button[data-editor-button="true"]');
+    if (button) {
+      setSelectedButton(button);
+    } else {
+      setSelectedButton(null);
+    }
+
     const cell = e.target.closest('td, th');
     if (cell) {
       // Clear previous selection
@@ -299,6 +423,13 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
   };
 
   const handleCellContextMenu = (e) => {
+        const button = e.target.closest('button[data-editor-button="true"]');
+    if (button) {
+      setSelectedButton(button);
+    } else {
+      setSelectedButton(null);
+    }
+    
     const cell = e.target.closest('td, th');
     if (cell) {
       const isAlreadySelected = selectedCells.includes(cell);
@@ -684,6 +815,12 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
     }
   };
 
+    const openButtonProperties = () => {
+    if (selectedButton) {
+      setButtonPropertiesOpen(true);
+    }
+  };
+
   const canMerge = selectedCells.length >= 2;
   const canDirectionalMerge = !!selectedCell;
   const canSplit = selectedCell && ((parseInt(selectedCell.rowSpan) || 1) > 1 || (parseInt(selectedCell.colSpan) || 1) > 1);
@@ -708,6 +845,7 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
       <Toolbar
         onFormat={execCommand}
         onInsertTable={openTableDialog}
+        onInsertButton={insertButton}
         onUndo={onUndo ?? (() => execCommand('undo'))}
         onRedo={onRedo ?? (() => execCommand('redo'))}
         onFontSize={handleFontSize}
@@ -734,7 +872,14 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
             />
           </ContextMenuTrigger>
             <ContextMenuContent className="w-56 bg-white text-slate-900 shadow-xl z-[70]">
-            <ContextMenuLabel>Table Editing</ContextMenuLabel>
+            <ContextMenuLabel>Editing Options</ContextMenuLabel>
+            <ContextMenuSeparator />
+            <ContextMenuItem onSelect={insertButton}>
+              Insert Button
+            </ContextMenuItem>
+            <ContextMenuItem disabled={!selectedButton} onSelect={openButtonProperties}>
+              Button Properties
+            </ContextMenuItem>
             <ContextMenuSeparator />
             <ContextMenuItem disabled={!selectedCell} onSelect={() => insertRow('above')}>
               Insert Row Above
@@ -860,6 +1005,13 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
         open={rowPropertiesOpen}
         onOpenChange={setRowPropertiesOpen}
         row={selectedRow}
+        onApply={handleInput}
+      />
+      
+      <ButtonPropertiesDialog
+        open={buttonPropertiesOpen}
+        onOpenChange={setButtonPropertiesOpen}
+        button={selectedButton}
         onApply={handleInput}
       />
     </div>
