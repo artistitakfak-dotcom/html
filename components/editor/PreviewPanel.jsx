@@ -18,7 +18,7 @@ import TablePropertiesDialog from './TablePropertiesDialog';
 import CellPropertiesDialog from './CellPropertiesDialog';
 import RowPropertiesDialog from './RowPropertiesDialog';
 
-export default function PreviewPanel({ html, onHtmlChange }) {
+export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
   const editorRef = useRef(null);
   const savedSelectionRef = useRef(null);
   const [tableDialogOpen, setTableDialogOpen] = useState(false);
@@ -708,8 +708,8 @@ export default function PreviewPanel({ html, onHtmlChange }) {
       <Toolbar
         onFormat={execCommand}
         onInsertTable={openTableDialog}
-        onUndo={() => execCommand('undo')}
-        onRedo={() => execCommand('redo')}
+        onUndo={onUndo ?? (() => execCommand('undo'))}
+        onRedo={onRedo ?? (() => execCommand('redo'))}
         onFontSize={handleFontSize}
         onFontFamily={handleFontFamily}
         onTextColor={handleTextColor}
