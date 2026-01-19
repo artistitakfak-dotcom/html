@@ -21,7 +21,7 @@ const defaultHtml = `<h2>Welcome To The HTML Editor!</h2>
 
 <p style="font-size: 14px;">The <strong>visual editor</strong> on the right and the <strong>source editor</strong> on the left are linked together and the changes are reflected in the other one as you type!</p>
 
-<table style="border-collapse: collapse; width: auto;">
+<table style="border-collapse: collapse; width: auto; background-color: #ffffff;">
   <tr>
     <td style="border: 1px solid #d1d5db; padding: 8px; min-width: 80px;"><strong>Name</strong></td>
     <td style="border: 1px solid #d1d5db; padding: 8px; min-width: 100px;"><strong>City</strong></td>
