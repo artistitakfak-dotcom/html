@@ -69,6 +69,50 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
     }
   }, [normalizeTableImages, onHtmlChange]);
 
+    const getSelectionTextColor = () => {
+    const selection = window.getSelection();
+    const anchorNode = selection?.anchorNode;
+    if (!anchorNode) return null;
+    const element = anchorNode.nodeType === Node.ELEMENT_NODE ? anchorNode : anchorNode.parentElement;
+    if (!element) return null;
+    return window.getComputedStyle(element).color;
+  };
+
+  const getSelectedListItems = () => {
+    const selection = window.getSelection();
+    if (!selection?.rangeCount || !editorRef.current) return [];
+
+    const range = selection.getRangeAt(0);
+    const listItems = Array.from(editorRef.current.querySelectorAll('li')).filter((li) =>
+      range.intersectsNode(li),
+    );
+
+    if (listItems.length > 0) {
+      return listItems;
+    }
+
+    const anchorNode = selection.anchorNode;
+    const anchorElement = anchorNode?.nodeType === Node.ELEMENT_NODE ? anchorNode : anchorNode?.parentElement;
+    const closestListItem = anchorElement?.closest('li');
+    if (closestListItem && editorRef.current.contains(closestListItem)) {
+      return [closestListItem];
+    }
+
+    return [];
+  };
+
+  const applyListMarkerColor = (color, { onlyIfUnset = false } = {}) => {
+    if (!color) return;
+    const listItems = getSelectedListItems();
+    if (listItems.length === 0) return;
+    listItems.forEach((item) => {
+      if (onlyIfUnset && item.style.getPropertyValue('--list-marker-color')) {
+        return;
+      }
+      item.style.setProperty('--list-marker-color', color);
+    });
+  };
+
   const execCommand = (command, value = null) => {
     editorRef.current?.focus();
     
@@ -89,6 +133,10 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
       document.execCommand(command, false, value);
     }
     
+    if (command === 'insertUnorderedList' || command === 'insertOrderedList') {
+      applyListMarkerColor(getSelectionTextColor(), { onlyIfUnset: true });
+    }
+
     handleInput();
     };
 
@@ -125,6 +173,11 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
 
   const handleTextColor = (color) => {
     execCommand('foreColor', color);
+  };
+
+    const handleListMarkerColor = (color) => {
+    applyListMarkerColor(color);
+    handleInput();
   };
 
   const handleBgColor = (color) => {
@@ -853,6 +906,9 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
         .prose li {
           margin: 0.25rem 0;
         }
+                .prose li::marker {
+          color: var(--list-marker-color, currentColor);
+        }
       `}</style>
       
       <Toolbar
@@ -865,6 +921,7 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
         onFontFamily={handleFontFamily}
         onTextColor={handleTextColor}
         onBgColor={handleBgColor}
+        onListMarkerColor={handleListMarkerColor}
       />
       
       <div className="flex-1 overflow-auto p-6 bg-slate-50">
