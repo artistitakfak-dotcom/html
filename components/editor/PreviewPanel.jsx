@@ -833,12 +833,25 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
           outline-offset: -2px;
           background-color: rgba(59, 130, 246, 0.1) !important;
         }
-              .prose table {
+          .prose table {
           background-color: #ffffff;
         }
         .prose table img {
           display: block;
           margin: 0;
+        }
+          .prose ul {
+          list-style-type: disc;
+          padding-left: 1.5rem;
+          margin: 0.5rem 0;
+        }
+        .prose ol {
+          list-style-type: decimal;
+          padding-left: 1.75rem;
+          margin: 0.5rem 0;
+        }
+        .prose li {
+          margin: 0.25rem 0;
         }
       `}</style>
       
