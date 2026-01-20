@@ -34,7 +34,6 @@ import {
   Redo,
   Link,
   Image,
-  Code,
   Minus,
   Square,
 } from 'lucide-react';
