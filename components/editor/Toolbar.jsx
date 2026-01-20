@@ -82,6 +82,7 @@ export default function Toolbar({
   onFontFamily,
   onTextColor,
   onBgColor,
+  onListMarkerColor,
   onInsertButton,
 }) {
   return (
@@ -167,6 +168,18 @@ export default function Toolbar({
       {/* Lists */}
       <ToolbarButton icon={List} tooltip="Bullet List" onClick={() => onFormat('insertUnorderedList')} />
       <ToolbarButton icon={ListOrdered} tooltip="Numbered List" onClick={() => onFormat('insertOrderedList')} />
+      <ColorPicker
+        value="#000000"
+        onChange={onListMarkerColor}
+        trigger={
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+            <div className="flex flex-col items-center">
+              <List className="h-3 w-3" />
+              <div className="w-4 h-1 bg-current rounded-sm mt-0.5" />
+            </div>
+          </Button>
+        }
+      />
       
       <Separator orientation="vertical" className="h-6 mx-1" />
       
