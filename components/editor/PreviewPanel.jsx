@@ -202,6 +202,12 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
     execCommand('hiliteColor', color);
   };
 
+  const handleDocumentBgColor = (color) => {
+    if (!editorRef.current) return;
+    editorRef.current.style.backgroundColor = color;
+    handleInput();
+  };
+
   const insertTable = (tableHtml) => {
     if (!editorRef.current) return;
     
@@ -940,6 +946,7 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
         onFontFamily={handleFontFamily}
         onTextColor={handleTextColor}
         onBgColor={handleBgColor}
+        onDocumentBgColor={handleDocumentBgColor}
         onListMarkerColor={handleListMarkerColor}
       />
       
