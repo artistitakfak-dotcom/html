@@ -29,6 +29,7 @@ import {
   ListOrdered,
   Table,
   Paintbrush,
+  Palette,
   Type,
   Undo,
   Redo,
@@ -82,6 +83,7 @@ export default function Toolbar({
   onFontFamily,
   onTextColor,
   onBgColor,
+  onDocumentBgColor,
   onListMarkerColor,
   onInsertButton,
 }) {
@@ -151,6 +153,16 @@ export default function Toolbar({
         trigger={
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
             <Paintbrush className="h-4 w-4" />
+          </Button>
+        }
+      />
+
+      <ColorPicker
+        value="#ffffff"
+        onChange={onDocumentBgColor}
+        trigger={
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+            <Palette className="h-4 w-4" />
           </Button>
         }
       />
