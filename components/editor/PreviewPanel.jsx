@@ -34,7 +34,6 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
   const [selectedButton, setSelectedButton] = useState(null);
   const [buttonPropertiesOpen, setButtonPropertiesOpen] = useState(false);
   const [activeLink, setActiveLink] = useState(null);
-  const [activeLinkTarget, setActiveLinkTarget] = useState('_self');
   const [resizing, setResizing] = useState(null);
   const [isSelecting, setIsSelecting] = useState(false);
 
@@ -142,10 +141,6 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
   );
 
   useEffect(() => {
-    setActiveLinkTarget(activeLink?.getAttribute('target') || '_self');
-  }, [activeLink]);
-
-  useEffect(() => {
     const handleSelectionChange = () => updateActiveLink();
     document.addEventListener('selectionchange', handleSelectionChange);
     return () => document.removeEventListener('selectionchange', handleSelectionChange);
@@ -154,21 +149,10 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
   const applyLinkStyles = (link, { isButton = false } = {}) => {
     if (!link) return;
     link.style.color = 'inherit';
-    link.style.textDecoration = isButton ? 'none' : 'underline';
+    link.style.textDecoration = isButton ? 'none' : 'inherit';
     if (isButton) {
       link.style.display = 'inline-block';
     }
-  };
-
-  const applyLinkTarget = (link, target) => {
-    if (!link) return;
-    if (!target || target === '_self') {
-      link.removeAttribute('target');
-      link.removeAttribute('rel');
-      return;
-    }
-    link.setAttribute('target', target);
-    link.setAttribute('rel', 'noopener noreferrer');
   };
 
   const unwrapLink = (link) => {
@@ -194,7 +178,6 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
         isButton: !!existingLink.querySelector('button[data-editor-button="true"]'),
       });
       setActiveLink(existingLink);
-      setActiveLinkTarget(existingLink.getAttribute('target') || '_self');
       handleInput();
       return;
     }
@@ -212,18 +195,14 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
       if (existingButtonLink) {
         existingButtonLink.setAttribute('href', url);
         applyLinkStyles(existingButtonLink, { isButton: true });
-        applyLinkTarget(existingButtonLink, existingButtonLink.getAttribute('target'));
         setActiveLink(existingButtonLink);
-        setActiveLinkTarget(existingButtonLink.getAttribute('target') || '_self');
       } else {
         const link = document.createElement('a');
         link.setAttribute('href', url);
         applyLinkStyles(link, { isButton: true });
-        applyLinkTarget(link, activeLinkTarget);
         targetButton.parentNode.insertBefore(link, targetButton);
         link.appendChild(targetButton);
         setActiveLink(link);
-        setActiveLinkTarget(link.getAttribute('target') || '_self');
       }
       handleInput();
       return;
@@ -234,7 +213,6 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
     const link = document.createElement('a');
     link.setAttribute('href', url);
     applyLinkStyles(link);
-    applyLinkTarget(link, activeLinkTarget);
     const contents = range.extractContents();
     link.appendChild(contents);
     range.insertNode(link);
@@ -243,7 +221,6 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
     updatedRange.selectNodeContents(link);
     selection.addRange(updatedRange);
     setActiveLink(link);
-    setActiveLinkTarget(link.getAttribute('target') || '_self');
     handleInput();
   };
 
@@ -263,7 +240,6 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
       applyLinkStyles(activeLink, {
         isButton: !!activeLink.querySelector('button[data-editor-button="true"]'),
       });
-      applyLinkTarget(activeLink, activeLinkTarget);
       handleInput();
     }
   };
@@ -273,14 +249,6 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
     const linkToRemove = activeLink;
     unwrapLink(linkToRemove);
     setActiveLink(null);
-    handleInput();
-  };
-
-  const handleLinkTargetChange = (event) => {
-    const nextTarget = event.target.value;
-    setActiveLinkTarget(nextTarget);
-    if (!activeLink) return;
-    applyLinkTarget(activeLink, nextTarget);
     handleInput();
   };
 
@@ -1124,19 +1092,6 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
       {activeLink && (
         <div className="flex flex-wrap items-center gap-2 border-b bg-slate-50 px-3 py-2 text-xs text-slate-600">
           <span className="font-medium text-slate-700">Link options:</span>
-          <label className="flex items-center gap-2 text-xs text-slate-600">
-            <span>Open in</span>
-            <select
-              className="h-7 rounded border border-slate-200 bg-white px-2 text-xs text-slate-700 shadow-sm"
-              value={activeLinkTarget}
-              onChange={handleLinkTargetChange}
-              onMouseDown={(event) => event.preventDefault()}
-            >
-              <option value="_self">Same tab</option>
-              <option value="_blank">New tab</option>
-              <option value="new-window">New window</option>
-            </select>
-          </label>
           <Button
             type="button"
             variant="ghost"
