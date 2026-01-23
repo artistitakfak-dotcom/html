@@ -316,13 +316,23 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
         // Add resize handle
         const handle = document.createElement('div');
         handle.className = 'resize-handle';
+        const lockWidth = table.dataset.lockWidth === 'true';
+        const lockHeight = table.dataset.lockHeight === 'true';
+        const cursorStyle = lockWidth && lockHeight
+          ? 'not-allowed'
+          : lockWidth
+          ? 'ns-resize'
+          : lockHeight
+          ? 'ew-resize'
+          : 'nwse-resize';
+
         handle.style.cssText = `
           position: absolute;
           right: 0;
           bottom: 0;
           width: 10px;
           height: 10px;
-          cursor: nwse-resize;
+          cursor: ${cursorStyle};
           background: linear-gradient(135deg, transparent 50%, #3b82f6 50%);
           opacity: 0;
           transition: opacity 0.2s;
@@ -341,6 +351,10 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
         handle.addEventListener('mousedown', (e) => {
           e.preventDefault();
           e.stopPropagation();
+
+          if (lockWidth && lockHeight) {
+            return;
+          }
           
           const startX = e.clientX;
           const startY = e.clientY;
@@ -351,9 +365,14 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
             const deltaX = moveEvent.clientX - startX;
             const deltaY = moveEvent.clientY - startY;
             
-            cell.style.width = `${Math.max(30, startWidth + deltaX)}px`;
-            cell.style.minWidth = `${Math.max(30, startWidth + deltaX)}px`;
-            cell.style.height = `${Math.max(20, startHeight + deltaY)}px`;
+            if (!lockWidth) {
+              const nextWidth = Math.max(30, startWidth + deltaX);
+              cell.style.width = `${nextWidth}px`;
+              cell.style.minWidth = `${nextWidth}px`;
+            }
+            if (!lockHeight) {
+              cell.style.height = `${Math.max(20, startHeight + deltaY)}px`;
+            }
           };
           
           const onMouseUp = () => {
@@ -1061,7 +1080,10 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
         open={tablePropertiesOpen}
         onOpenChange={setTablePropertiesOpen}
         table={currentTable}
-        onApply={handleInput}
+        onApply={() => {
+          makeTablesResizable();
+          handleInput();
+        }}
       />
 
       <CellPropertiesDialog

@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +24,8 @@ export default function TablePropertiesDialog({ open, onOpenChange, table, onApp
   const [properties, setProperties] = useState({
     width: '100%',
     height: 'auto',
+    lockWidth: false,
+    lockHeight: false,
     alignment: 'left',
     borderWidth: '1',
     borderStyle: 'solid',
@@ -34,14 +35,22 @@ export default function TablePropertiesDialog({ open, onOpenChange, table, onApp
     backgroundColor: '',
   });
 
+  const isPixelValue = (value) => /^-?\d+(\.\d+)?px$/.test(value.trim());
+
   useEffect(() => {
     if (table && open) {
       const style = table.style;
       const computedStyle = window.getComputedStyle(table);
+      const width = style.width || computedStyle.width || '100%';
+      const height = style.height || 'auto';
+      const lockWidth = table.dataset.lockWidth === 'true' && isPixelValue(width);
+      const lockHeight = table.dataset.lockHeight === 'true' && isPixelValue(height);
       
       setProperties({
-        width: style.width || computedStyle.width || '100%',
-        height: style.height || 'auto',
+        width,
+        height,
+        lockWidth,
+        lockHeight,
         alignment: style.marginLeft === 'auto' && style.marginRight === 'auto' ? 'center' 
                   : style.marginLeft === 'auto' ? 'right' : 'left',
         borderWidth: style.borderWidth ? parseInt(style.borderWidth) : 1,
@@ -62,6 +71,18 @@ export default function TablePropertiesDialog({ open, onOpenChange, table, onApp
         table.style.height = properties.height;
       } else {
         table.style.height = '';
+      }
+
+      if (properties.lockWidth && isPixelValue(properties.width)) {
+        table.dataset.lockWidth = 'true';
+      } else {
+        delete table.dataset.lockWidth;
+      }
+
+      if (properties.lockHeight && isPixelValue(properties.height)) {
+        table.dataset.lockHeight = 'true';
+      } else {
+        delete table.dataset.lockHeight;
       }
 
       // Apply alignment
@@ -132,20 +153,70 @@ export default function TablePropertiesDialog({ open, onOpenChange, table, onApp
                 <Input
                   id="width"
                   value={properties.width}
-                  onChange={(e) => setProperties({ ...properties, width: e.target.value })}
+                  onChange={(e) => {
+                    const width = e.target.value;
+                    setProperties({
+                      ...properties,
+                      width,
+                      lockWidth: isPixelValue(width) ? properties.lockWidth : false,
+                    });
+                  }}
                   placeholder="100% or 500px"
                 />
                 <p className="text-xs text-slate-500">Use px, %, or auto</p>
+                <div className="flex items-center justify-between rounded-md border p-2">
+                  <Label htmlFor="lockWidth" className="text-sm text-slate-700">
+                    Lock width (px)
+                  </Label>
+                  <Button
+                    id="lockWidth"
+                    type="button"
+                    size="sm"
+                    variant={properties.lockWidth ? "default" : "outline"}
+                    onClick={() =>
+                      setProperties({ ...properties, lockWidth: !properties.lockWidth })
+                    }
+                    disabled={!isPixelValue(properties.width)}
+                    aria-pressed={properties.lockWidth}
+                  >
+                    {properties.lockWidth ? "Locked" : "Unlocked"}
+                  </Button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="height">Height</Label>
                 <Input
                   id="height"
                   value={properties.height}
-                  onChange={(e) => setProperties({ ...properties, height: e.target.value })}
+                  onChange={(e) => {
+                    const height = e.target.value;
+                    setProperties({
+                      ...properties,
+                      height,
+                      lockHeight: isPixelValue(height) ? properties.lockHeight : false,
+                    });
+                  }}
                   placeholder="auto or 300px"
                 />
                 <p className="text-xs text-slate-500">Use px or auto</p>
+                <div className="flex items-center justify-between rounded-md border p-2">
+                  <Label htmlFor="lockHeight" className="text-sm text-slate-700">
+                    Lock height (px)
+                  </Label>
+                  <Button
+                    id="lockHeight"
+                    type="button"
+                    size="sm"
+                    variant={properties.lockHeight ? "default" : "outline"}
+                    onClick={() =>
+                      setProperties({ ...properties, lockHeight: !properties.lockHeight })
+                    }
+                    disabled={!isPixelValue(properties.height)}
+                    aria-pressed={properties.lockHeight}
+                  >
+                    {properties.lockHeight ? "Locked" : "Unlocked"}
+                  </Button>
+                </div>
               </div>
             </div>
 
