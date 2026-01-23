@@ -18,6 +18,7 @@ import TablePropertiesDialog from './TablePropertiesDialog';
 import CellPropertiesDialog from './CellPropertiesDialog';
 import RowPropertiesDialog from './RowPropertiesDialog';
 import ButtonPropertiesDialog from './components/editor/ButtonPropertiesDialog';
+import { Button } from "@/components/ui/button";
 
 export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
   const editorRef = useRef(null);
@@ -32,6 +33,7 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
   const [currentTable, setCurrentTable] = useState(null);
   const [selectedButton, setSelectedButton] = useState(null);
   const [buttonPropertiesOpen, setButtonPropertiesOpen] = useState(false);
+  const [activeLink, setActiveLink] = useState(null);
   const [resizing, setResizing] = useState(null);
   const [isSelecting, setIsSelecting] = useState(false);
 
@@ -113,14 +115,148 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
     });
   };
 
+  const getClosestLink = (node) => {
+    if (!node) return null;
+    const element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+    return element?.closest('a') ?? null;
+  };
+
+  const updateActiveLink = useCallback(
+    ({ explicitButton } = {}) => {
+      const selection = window.getSelection();
+      if (!selection?.rangeCount || !editorRef.current) {
+        setActiveLink(null);
+        return;
+      }
+      const range = selection.getRangeAt(0);
+      if (!editorRef.current.contains(range.commonAncestorContainer)) {
+        setActiveLink(null);
+        return;
+      }
+      const linkFromSelection = getClosestLink(selection.anchorNode);
+      const buttonLink = (explicitButton ?? selectedButton)?.closest('a');
+      setActiveLink(buttonLink || linkFromSelection || null);
+    },
+    [selectedButton],
+  );
+
+  useEffect(() => {
+    const handleSelectionChange = () => updateActiveLink();
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => document.removeEventListener('selectionchange', handleSelectionChange);
+  }, [updateActiveLink]);
+
+  const applyLinkStyles = (link, { isButton = false } = {}) => {
+    if (!link) return;
+    link.style.color = 'inherit';
+    link.style.textDecoration = isButton ? 'none' : 'inherit';
+    if (isButton) {
+      link.style.display = 'inline-block';
+    }
+  };
+
+  const unwrapLink = (link) => {
+    if (!link?.parentNode) return;
+    const parent = link.parentNode;
+    while (link.firstChild) {
+      parent.insertBefore(link.firstChild, link);
+    }
+    parent.removeChild(link);
+  };
+
+  const createOrUpdateLink = (url) => {
+    if (!url) return;
+    const selection = window.getSelection();
+    if (!selection?.rangeCount || !editorRef.current) return;
+    const range = selection.getRangeAt(0);
+    if (!editorRef.current.contains(range.commonAncestorContainer)) return;
+
+    const existingLink = getClosestLink(selection.anchorNode);
+    if (existingLink) {
+      existingLink.setAttribute('href', url);
+      applyLinkStyles(existingLink, {
+        isButton: !!existingLink.querySelector('button[data-editor-button="true"]'),
+      });
+      setActiveLink(existingLink);
+      handleInput();
+      return;
+    }
+
+    const targetButton =
+      selectedButton ||
+      getClosestLink(range.commonAncestorContainer)?.querySelector('button[data-editor-button="true"]') ||
+      (range.commonAncestorContainer?.nodeType === Node.ELEMENT_NODE
+        ? range.commonAncestorContainer
+        : range.commonAncestorContainer?.parentElement
+      )?.closest('button[data-editor-button="true"]');
+
+    if (targetButton) {
+      const existingButtonLink = targetButton.closest('a');
+      if (existingButtonLink) {
+        existingButtonLink.setAttribute('href', url);
+        applyLinkStyles(existingButtonLink, { isButton: true });
+        setActiveLink(existingButtonLink);
+      } else {
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        applyLinkStyles(link, { isButton: true });
+        targetButton.parentNode.insertBefore(link, targetButton);
+        link.appendChild(targetButton);
+        setActiveLink(link);
+      }
+      handleInput();
+      return;
+    }
+
+    if (selection.isCollapsed) return;
+
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    applyLinkStyles(link);
+    const contents = range.extractContents();
+    link.appendChild(contents);
+    range.insertNode(link);
+    selection.removeAllRanges();
+    const updatedRange = document.createRange();
+    updatedRange.selectNodeContents(link);
+    selection.addRange(updatedRange);
+    setActiveLink(link);
+    handleInput();
+  };
+
+  const handleCreateLink = () => {
+    const url = prompt('Enter URL:');
+    if (url) {
+      createOrUpdateLink(url);
+    }
+  };
+
+  const handleEditLink = () => {
+    if (!activeLink) return;
+    const current = activeLink.getAttribute('href') || '';
+    const url = prompt('Edit URL:', current);
+    if (url) {
+      activeLink.setAttribute('href', url);
+      applyLinkStyles(activeLink, {
+        isButton: !!activeLink.querySelector('button[data-editor-button="true"]'),
+      });
+      handleInput();
+    }
+  };
+
+  const handleRemoveLink = () => {
+    if (!activeLink) return;
+    const linkToRemove = activeLink;
+    unwrapLink(linkToRemove);
+    setActiveLink(null);
+    handleInput();
+  };
+
   const execCommand = (command, value = null) => {
     editorRef.current?.focus();
     
     if (command === 'createLink') {
-      const url = prompt('Enter URL:');
-      if (url) {
-        document.execCommand(command, false, url);
-      }
+      handleCreateLink();
     } else if (command === 'insertImage') {
       const url = prompt('Enter image URL:');
       if (url) {
@@ -468,8 +604,10 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
     const button = e.target.closest('button[data-editor-button="true"]');
     if (button) {
       setSelectedButton(button);
+      updateActiveLink({ explicitButton: button });
     } else {
       setSelectedButton(null);
+      updateActiveLink();
     }
 
     const cell = e.target.closest('td, th');
@@ -504,8 +642,10 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
         const button = e.target.closest('button[data-editor-button="true"]');
     if (button) {
       setSelectedButton(button);
+      updateActiveLink({ explicitButton: button });
     } else {
       setSelectedButton(null);
+      updateActiveLink();
     }
     
     const cell = e.target.closest('td, th');
@@ -949,6 +1089,31 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
         onDocumentBgColor={handleDocumentBgColor}
         onListMarkerColor={handleListMarkerColor}
       />
+      {activeLink && (
+        <div className="flex flex-wrap items-center gap-2 border-b bg-slate-50 px-3 py-2 text-xs text-slate-600">
+          <span className="font-medium text-slate-700">Link options:</span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={handleEditLink}
+          >
+            Edit Link
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={handleRemoveLink}
+          >
+            Remove Link
+          </Button>
+        </div>
+      )}
       
       <div className="flex-1 overflow-auto p-6 bg-slate-50">
         <ContextMenu>
