@@ -17,6 +17,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  Menubar,
+  MenubarContent,
+  MenubarItem,
+  MenubarMenu,
+  MenubarSeparator,
+  MenubarTrigger,
+} from "@/components/ui/menubar";
+import {
   Bold,
   Italic,
   Underline,
@@ -48,6 +56,8 @@ const fontFamilies = [
   { value: 'Courier New, monospace', label: 'Courier New' },
   { value: 'Verdana, sans-serif', label: 'Verdana' },
   { value: 'Tahoma, sans-serif', label: 'Tahoma' },
+  { value: '"Cormorant", serif', label: 'Cormorant' },
+  { value: '"Source Serif 4", serif', label: 'Source Serif 4' },
 ];
 
 function ToolbarButton({ icon: Icon, tooltip, onClick, active }) {
@@ -87,8 +97,66 @@ export default function Toolbar({
   onListMarkerColor,
   onInsertButton,
 }) {
+  const handleMenuFormat = (tag, fontSize) => (event) => {
+    event.preventDefault();
+    onFormat('formatBlock', tag);
+    if (fontSize) {
+      onFontSize(fontSize);
+    }
+  };
+
+  const handleMenuColor = (color) => (event) => {
+    event.preventDefault();
+    onTextColor(color);
+  };
+
+  const handleIndent = (direction) => (event) => {
+    event.preventDefault();
+    onFormat(direction);
+  };
+
   return (
     <div className="flex items-center gap-1 p-2 border-b bg-white flex-wrap">
+      <Menubar className="h-8 border-slate-200 px-1 shadow-none">
+        <MenubarMenu>
+          <MenubarTrigger className="px-2 py-1 text-xs">Text</MenubarTrigger>
+          <MenubarContent className="bg-white">
+            <MenubarItem onSelect={handleMenuFormat('<h1>', '48')}>
+              Heading 1
+            </MenubarItem>
+            <MenubarItem onSelect={handleMenuFormat('<h2>', '36')}>
+              Heading 2
+            </MenubarItem>
+            <MenubarItem onSelect={handleMenuFormat('<h3>', '32')}>
+              Heading 3
+            </MenubarItem>
+            <MenubarItem onSelect={handleMenuFormat('<h4>', '28')}>
+              Heading 4
+            </MenubarItem>
+            <MenubarItem onSelect={handleMenuFormat('<p>', '14')}>
+              Paragraph
+            </MenubarItem>
+            <MenubarSeparator />
+            <MenubarItem onSelect={handleIndent('indent')}>
+              Increase indent
+            </MenubarItem>
+            <MenubarItem onSelect={handleIndent('outdent')}>
+              Decrease indent
+            </MenubarItem>
+            <MenubarSeparator />
+            <MenubarItem className="text-red-600" onSelect={handleMenuColor('#dc2626')}>
+              Red text
+            </MenubarItem>
+            <MenubarItem className="text-green-600" onSelect={handleMenuColor('#16a34a')}>
+              Green text
+            </MenubarItem>
+            <MenubarItem className="text-blue-600" onSelect={handleMenuColor('#2563eb')}>
+              Blue text
+            </MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+      </Menubar>
+
       {/* Undo/Redo */}
       <ToolbarButton icon={Undo} tooltip="Undo (Ctrl+Z)" onClick={onUndo} />
       <ToolbarButton icon={Redo} tooltip="Redo (Ctrl+Y)" onClick={onRedo} />
