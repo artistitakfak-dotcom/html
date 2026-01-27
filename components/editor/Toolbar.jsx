@@ -102,23 +102,23 @@ export default function Toolbar({
       <Menubar className="h-8 border-slate-200 px-1 shadow-none">
         <MenubarMenu>
           <MenubarTrigger className="px-2 py-1 text-xs">Text</MenubarTrigger>
-          <MenubarContent>
-            <MenubarItem onClick={() => onFormat('formatBlock', 'H1')}>
+          <MenubarContent className="bg-white">
+            <MenubarItem onClick={() => onFormat('formatBlock', '<h1>')}>
               Heading 1
             </MenubarItem>
-            <MenubarItem onClick={() => onFormat('formatBlock', 'H2')}>
+            <MenubarItem onClick={() => onFormat('formatBlock', '<h2>')}>
               Heading 2
             </MenubarItem>
-            <MenubarItem onClick={() => onFormat('formatBlock', 'H3')}>
+            <MenubarItem onClick={() => onFormat('formatBlock', '<h3>')}>
               Heading 3
             </MenubarItem>
-            <MenubarItem onClick={() => onFormat('formatBlock', 'H4')}>
+            <MenubarItem onClick={() => onFormat('formatBlock', '<h4>')}>
               Heading 4
             </MenubarItem>
-            <MenubarItem onClick={() => onFormat('formatBlock', 'P')}>
+            <MenubarItem onClick={() => onFormat('formatBlock', '<p>')}>
               Paragraph
             </MenubarItem>
-            <MenubarItem onClick={() => onFormat('formatBlock', 'BLOCKQUOTE')}>
+            <MenubarItem onClick={() => onFormat('formatBlock', '<blockquote>')}>
               Block Quote
             </MenubarItem>
             <MenubarSeparator />
