@@ -51,7 +51,7 @@ export default function PreviewPanel({
       'address|article|aside|blockquote|div|dl|dt|dd|fieldset|figcaption|figure|footer|form|h[1-6]|header|hr|li|main|nav|ol|p|pre|section|table|tbody|thead|tfoot|tr|td|th|ul';
     const betweenBlocks = new RegExp(`</(${blockTags})>\\s*<`, 'gi');
     const withBlockLines = rawHtml.replace(betweenBlocks, '</$1>\\n<');
-    return withBlockLines.replace(/<br\\s*\\/?>/gi, '<br>\\n');
+    return withBlockLines.replace(/<br\s*\/?>/gi, '<br>\\n');
   }, []);
   
     const normalizeTableImages = () => {
