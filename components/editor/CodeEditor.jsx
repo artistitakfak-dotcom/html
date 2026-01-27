@@ -5,7 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Copy, Download, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function CodeEditor({ value, onChange, onClear }) {
+export default function CodeEditor({
+  value,
+  onChange,
+  onClear,
+  onCursorChange,
+  activeLine,
+  cursorSource,
+}) {
   const textareaRef = useRef(null);
   const lineNumbersRef = useRef(null);
 
@@ -42,9 +49,39 @@ export default function CodeEditor({ value, onChange, onClear }) {
       onChange(newValue);
       setTimeout(() => {
         e.target.selectionStart = e.target.selectionEnd = start + 2;
+            if (onCursorChange) {
+          onCursorChange({
+            index: start + 2,
+            line: newValue.substring(0, start + 2).split('\n').length,
+            source: 'code',
+          });
+        }
       }, 0);
     }
   };
+
+    const updateCursor = useCallback(
+    (target) => {
+      if (!onCursorChange || !target) return;
+      const index = target.selectionStart ?? 0;
+      const line = value.substring(0, index).split('\n').length;
+      onCursorChange({ index, line, source: 'code' });
+    },
+    [onCursorChange, value],
+  );
+
+  useEffect(() => {
+    if (!activeLine || !textareaRef.current || !lineNumbersRef.current) return;
+    const lineHeight = 24;
+    const targetTop = Math.max(0, (activeLine - 1) * lineHeight);
+    const viewTop = textareaRef.current.scrollTop;
+    const viewBottom = viewTop + textareaRef.current.clientHeight;
+    if (targetTop < viewTop || targetTop + lineHeight > viewBottom) {
+      const nextScrollTop = Math.max(0, targetTop - lineHeight * 2);
+      textareaRef.current.scrollTop = nextScrollTop;
+      lineNumbersRef.current.scrollTop = nextScrollTop;
+    }
+  }, [activeLine]);
 
   return (
     <div className="flex flex-col h-full bg-slate-900 rounded-lg overflow-hidden">
@@ -97,7 +134,16 @@ export default function CodeEditor({ value, onChange, onClear }) {
           className="w-12 bg-slate-800 text-slate-500 text-xs font-mono py-3 overflow-hidden select-none text-right pr-3"
         >
           {Array.from({ length: lineCount }).map((_, i) => (
-            <div key={i} className="leading-6 h-6">
+              <div
+              key={i}
+              className={`leading-6 h-6 ${
+                activeLine === i + 1
+                  ? cursorSource === 'preview'
+                    ? 'bg-blue-500/20 text-blue-200'
+                    : 'bg-indigo-500/20 text-indigo-200'
+                  : ''
+              }`}
+            >
               {i + 1}
             </div>
           ))}
@@ -110,6 +156,9 @@ export default function CodeEditor({ value, onChange, onClear }) {
           onChange={(e) => onChange(e.target.value)}
           onScroll={syncScroll}
           onKeyDown={handleKeyDown}
+          onClick={(e) => updateCursor(e.target)}
+          onKeyUp={(e) => updateCursor(e.target)}
+          onSelect={(e) => updateCursor(e.target)}
           className="flex-1 bg-slate-900 text-slate-100 font-mono text-sm p-3 resize-none outline-none leading-6 overflow-auto"
           spellCheck={false}
           placeholder="Enter your HTML code here..."
