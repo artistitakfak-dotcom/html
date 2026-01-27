@@ -97,14 +97,22 @@ export default function Toolbar({
   onListMarkerColor,
   onInsertButton,
 }) {
-  const handleMenuFormat = (tag) => (event) => {
+  const handleMenuFormat = (tag, fontSize) => (event) => {
     event.preventDefault();
     onFormat('formatBlock', tag);
+    if (fontSize) {
+      onFontSize(fontSize);
+    }
   };
 
   const handleMenuColor = (color) => (event) => {
     event.preventDefault();
     onTextColor(color);
+  };
+
+  const handleIndent = (direction) => (event) => {
+    event.preventDefault();
+    onFormat(direction);
   };
 
   return (
@@ -113,23 +121,27 @@ export default function Toolbar({
         <MenubarMenu>
           <MenubarTrigger className="px-2 py-1 text-xs">Text</MenubarTrigger>
           <MenubarContent className="bg-white">
-            <MenubarItem onSelect={handleMenuFormat('<h1>')}>
+            <MenubarItem onSelect={handleMenuFormat('<h1>', '48')}>
               Heading 1
             </MenubarItem>
-            <MenubarItem onSelect={handleMenuFormat('<h2>')}>
+            <MenubarItem onSelect={handleMenuFormat('<h2>', '36')}>
               Heading 2
             </MenubarItem>
-            <MenubarItem onSelect={handleMenuFormat('<h3>')}>
+            <MenubarItem onSelect={handleMenuFormat('<h3>', '32')}>
               Heading 3
             </MenubarItem>
-            <MenubarItem onSelect={handleMenuFormat('<h4>')}>
+            <MenubarItem onSelect={handleMenuFormat('<h4>', '28')}>
               Heading 4
             </MenubarItem>
-            <MenubarItem onSelect={handleMenuFormat('<p>')}>
+            <MenubarItem onSelect={handleMenuFormat('<p>', '14')}>
               Paragraph
             </MenubarItem>
-            <MenubarItem onSelect={handleMenuFormat('<blockquote>')}>
-              Block Quote
+            <MenubarSeparator />
+            <MenubarItem onSelect={handleIndent('indent')}>
+              Increase indent
+            </MenubarItem>
+            <MenubarItem onSelect={handleIndent('outdent')}>
+              Decrease indent
             </MenubarItem>
             <MenubarSeparator />
             <MenubarItem className="text-red-600" onSelect={handleMenuColor('#dc2626')}>
