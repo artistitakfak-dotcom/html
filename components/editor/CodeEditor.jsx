@@ -159,7 +159,8 @@ export default function CodeEditor({
           onClick={(e) => updateCursor(e.target)}
           onKeyUp={(e) => updateCursor(e.target)}
           onSelect={(e) => updateCursor(e.target)}
-          className="flex-1 bg-slate-900 text-slate-100 font-mono text-sm p-3 resize-none outline-none leading-6 overflow-auto"
+          className="flex-1 bg-slate-900 text-slate-100 font-mono text-sm p-3 resize-none outline-none leading-6 overflow-x-auto overflow-y-auto whitespace-pre"
+          wrap="off"
           spellCheck={false}
           placeholder="Enter your HTML code here..."
         />
