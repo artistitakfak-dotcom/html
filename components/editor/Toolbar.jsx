@@ -97,38 +97,48 @@ export default function Toolbar({
   onListMarkerColor,
   onInsertButton,
 }) {
+  const handleMenuFormat = (tag) => (event) => {
+    event.preventDefault();
+    onFormat('formatBlock', tag);
+  };
+
+  const handleMenuColor = (color) => (event) => {
+    event.preventDefault();
+    onTextColor(color);
+  };
+
   return (
     <div className="flex items-center gap-1 p-2 border-b bg-white flex-wrap">
       <Menubar className="h-8 border-slate-200 px-1 shadow-none">
         <MenubarMenu>
           <MenubarTrigger className="px-2 py-1 text-xs">Text</MenubarTrigger>
           <MenubarContent className="bg-white">
-            <MenubarItem onClick={() => onFormat('formatBlock', '<h1>')}>
+            <MenubarItem onSelect={handleMenuFormat('<h1>')}>
               Heading 1
             </MenubarItem>
-            <MenubarItem onClick={() => onFormat('formatBlock', '<h2>')}>
+            <MenubarItem onSelect={handleMenuFormat('<h2>')}>
               Heading 2
             </MenubarItem>
-            <MenubarItem onClick={() => onFormat('formatBlock', '<h3>')}>
+            <MenubarItem onSelect={handleMenuFormat('<h3>')}>
               Heading 3
             </MenubarItem>
-            <MenubarItem onClick={() => onFormat('formatBlock', '<h4>')}>
+            <MenubarItem onSelect={handleMenuFormat('<h4>')}>
               Heading 4
             </MenubarItem>
-            <MenubarItem onClick={() => onFormat('formatBlock', '<p>')}>
+            <MenubarItem onSelect={handleMenuFormat('<p>')}>
               Paragraph
             </MenubarItem>
-            <MenubarItem onClick={() => onFormat('formatBlock', '<blockquote>')}>
+            <MenubarItem onSelect={handleMenuFormat('<blockquote>')}>
               Block Quote
             </MenubarItem>
             <MenubarSeparator />
-            <MenubarItem className="text-red-600" onClick={() => onTextColor('#dc2626')}>
+            <MenubarItem className="text-red-600" onSelect={handleMenuColor('#dc2626')}>
               Red text
             </MenubarItem>
-            <MenubarItem className="text-green-600" onClick={() => onTextColor('#16a34a')}>
+            <MenubarItem className="text-green-600" onSelect={handleMenuColor('#16a34a')}>
               Green text
             </MenubarItem>
-            <MenubarItem className="text-blue-600" onClick={() => onTextColor('#2563eb')}>
+            <MenubarItem className="text-blue-600" onSelect={handleMenuColor('#2563eb')}>
               Blue text
             </MenubarItem>
           </MenubarContent>
