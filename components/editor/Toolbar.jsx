@@ -17,6 +17,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  Menubar,
+  MenubarContent,
+  MenubarItem,
+  MenubarMenu,
+  MenubarSeparator,
+  MenubarTrigger,
+} from "@/components/ui/menubar";
+import {
   Bold,
   Italic,
   Underline,
@@ -48,6 +56,8 @@ const fontFamilies = [
   { value: 'Courier New, monospace', label: 'Courier New' },
   { value: 'Verdana, sans-serif', label: 'Verdana' },
   { value: 'Tahoma, sans-serif', label: 'Tahoma' },
+  { value: '"Cormorant", serif', label: 'Cormorant' },
+  { value: '"Source Serif 4", serif', label: 'Source Serif 4' },
 ];
 
 function ToolbarButton({ icon: Icon, tooltip, onClick, active }) {
@@ -89,6 +99,42 @@ export default function Toolbar({
 }) {
   return (
     <div className="flex items-center gap-1 p-2 border-b bg-white flex-wrap">
+      <Menubar className="h-8 border-slate-200 px-1 shadow-none">
+        <MenubarMenu>
+          <MenubarTrigger className="px-2 py-1 text-xs">Text</MenubarTrigger>
+          <MenubarContent>
+            <MenubarItem onClick={() => onFormat('formatBlock', 'H1')}>
+              Heading 1
+            </MenubarItem>
+            <MenubarItem onClick={() => onFormat('formatBlock', 'H2')}>
+              Heading 2
+            </MenubarItem>
+            <MenubarItem onClick={() => onFormat('formatBlock', 'H3')}>
+              Heading 3
+            </MenubarItem>
+            <MenubarItem onClick={() => onFormat('formatBlock', 'H4')}>
+              Heading 4
+            </MenubarItem>
+            <MenubarItem onClick={() => onFormat('formatBlock', 'P')}>
+              Paragraph
+            </MenubarItem>
+            <MenubarItem onClick={() => onFormat('formatBlock', 'BLOCKQUOTE')}>
+              Block Quote
+            </MenubarItem>
+            <MenubarSeparator />
+            <MenubarItem className="text-red-600" onClick={() => onTextColor('#dc2626')}>
+              Red text
+            </MenubarItem>
+            <MenubarItem className="text-green-600" onClick={() => onTextColor('#16a34a')}>
+              Green text
+            </MenubarItem>
+            <MenubarItem className="text-blue-600" onClick={() => onTextColor('#2563eb')}>
+              Blue text
+            </MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+      </Menubar>
+
       {/* Undo/Redo */}
       <ToolbarButton icon={Undo} tooltip="Undo (Ctrl+Z)" onClick={onUndo} />
       <ToolbarButton icon={Redo} tooltip="Redo (Ctrl+Y)" onClick={onRedo} />
