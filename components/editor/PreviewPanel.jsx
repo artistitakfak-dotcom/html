@@ -45,15 +45,6 @@ export default function PreviewPanel({
   const [resizing, setResizing] = useState(null);
   const [isSelecting, setIsSelecting] = useState(false);
 
-    const formatHtmlForCode = useCallback((rawHtml) => {
-    if (!rawHtml) return rawHtml;
-    const blockTags =
-      'address|article|aside|blockquote|div|dl|dt|dd|fieldset|figcaption|figure|footer|form|h[1-6]|header|hr|li|main|nav|ol|p|pre|section|table|tbody|thead|tfoot|tr|td|th|ul';
-    const betweenBlocks = new RegExp(`</(${blockTags})>\\s*<`, 'gi');
-    const withBlockLines = rawHtml.replace(betweenBlocks, '</$1>\\n<');
-    return withBlockLines.replace(/<br\s*\/?>/gi, '<br>\\n');
-  }, []);
-  
     const normalizeTableImages = () => {
     if (!editorRef.current) return;
     const cells = editorRef.current.querySelectorAll('td, th');
@@ -163,10 +154,9 @@ export default function PreviewPanel({
     if (editorRef.current) {
       normalizeTableImages();
       makeButtonsResizable();
-      const formattedHtml = formatHtmlForCode(editorRef.current.innerHTML);
-      onHtmlChange(formattedHtml);
+      onHtmlChange(editorRef.current.innerHTML);
     }
-  }, [formatHtmlForCode, normalizeTableImages, onHtmlChange]);
+  }, [normalizeTableImages, onHtmlChange]);
 
     const getSelectionTextColor = () => {
     const selection = window.getSelection();
