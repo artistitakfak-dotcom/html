@@ -75,14 +75,18 @@ export default function TablePropertiesDialog({ open, onOpenChange, table, onApp
 
       if (properties.lockWidth && isPixelValue(properties.width)) {
         table.dataset.lockWidth = 'true';
+        table.style.setProperty('--locked-width', properties.width);
       } else {
         delete table.dataset.lockWidth;
+        table.style.removeProperty('--locked-width');
       }
 
       if (properties.lockHeight && isPixelValue(properties.height)) {
         table.dataset.lockHeight = 'true';
+        table.style.setProperty('--locked-height', properties.height);
       } else {
         delete table.dataset.lockHeight;
+        table.style.removeProperty('--locked-height');
       }
 
       // Apply alignment

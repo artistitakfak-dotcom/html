@@ -54,12 +54,39 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
     });
   };
 
+  const isPixelValue = (value) => /^-?\d+(\.\d+)?px$/.test(value.trim());
+
+  const syncLockedTableConstraints = () => {
+    if (!editorRef.current) return;
+    const tables = editorRef.current.querySelectorAll('table');
+    tables.forEach(table => {
+      if (table.dataset.lockWidth === 'true') {
+        const width = table.style.width || window.getComputedStyle(table).width || '';
+        if (isPixelValue(width)) {
+          table.style.setProperty('--locked-width', width);
+        }
+      } else {
+        table.style.removeProperty('--locked-width');
+      }
+
+      if (table.dataset.lockHeight === 'true') {
+        const height = table.style.height || window.getComputedStyle(table).height || '';
+        if (isPixelValue(height)) {
+          table.style.setProperty('--locked-height', height);
+        }
+      } else {
+        table.style.removeProperty('--locked-height');
+      }
+    });
+  };
+
   // Update editor content when html prop changes (from code editor)
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== html) {
       editorRef.current.innerHTML = html;
       makeTablesResizable();
       makeButtonsResizable();
+      syncLockedTableConstraints();
     }
   }, [html]);
 
@@ -67,9 +94,10 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
     if (editorRef.current) {
       normalizeTableImages();
       makeButtonsResizable();
+      syncLockedTableConstraints();
       onHtmlChange(editorRef.current.innerHTML);
     }
-  }, [normalizeTableImages, onHtmlChange]);
+  }, [normalizeTableImages, onHtmlChange, syncLockedTableConstraints]);
 
     const getSelectionTextColor = () => {
     const selection = window.getSelection();
@@ -1057,6 +1085,15 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
         .prose table img {
           display: block;
           margin: 0;
+        }
+        .prose table[data-lock-width="true"] table {
+          max-width: var(--locked-width);
+          width: min(100%, var(--locked-width));
+        }
+        .prose table[data-lock-height="true"] table {
+          max-height: var(--locked-height);
+          height: min(100%, var(--locked-height));
+          overflow: hidden;
         }
           .prose ul {
           list-style-type: disc;
