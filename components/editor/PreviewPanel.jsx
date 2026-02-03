@@ -20,9 +20,17 @@ import RowPropertiesDialog from './RowPropertiesDialog';
 import ButtonPropertiesDialog from './components/editor/ButtonPropertiesDialog';
 import { Button } from "@/components/ui/button";
 
-export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
+export default function PreviewPanel({
+  html,
+  onHtmlChange,
+  onUndo,
+  onRedo,
+  onCursorChange,
+  codeCursorIndex,
+}) {
   const editorRef = useRef(null);
   const savedSelectionRef = useRef(null);
+  const codeCursorElementRef = useRef(null);
   const [tableDialogOpen, setTableDialogOpen] = useState(false);
   const [tablePropertiesOpen, setTablePropertiesOpen] = useState(false);
   const [cellPropertiesOpen, setCellPropertiesOpen] = useState(false);
@@ -54,6 +62,49 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
     });
   };
 
+    const getNodePath = (node, root) => {
+    const path = [];
+    let current = node;
+    while (current && current !== root) {
+      const parent = current.parentNode;
+      if (!parent) break;
+      const index = Array.from(parent.childNodes).indexOf(current);
+      path.unshift(index);
+      current = parent;
+    }
+    return path;
+  };
+
+  const getNodeFromPath = (root, path) => {
+    let current = root;
+    for (const index of path) {
+      if (!current?.childNodes?.[index]) {
+        return null;
+      }
+      current = current.childNodes[index];
+    }
+    return current;
+  };
+
+  const getLineNumberFromIndex = (source, index) => {
+    if (index < 0) return null;
+    return source.slice(0, index).split('\n').length;
+  };
+
+  const getLineNumberForElement = (source, element) => {
+    if (!element) return null;
+    const outerHTML = element.outerHTML || '';
+    if (!outerHTML) return null;
+    let index = source.indexOf(outerHTML);
+    if (index === -1) {
+      const tagName = element.tagName?.toLowerCase();
+      if (!tagName) return null;
+      index = source.toLowerCase().indexOf(`<${tagName}`);
+    }
+    if (index === -1) return null;
+    return getLineNumberFromIndex(source, index);
+  };
+
   // Update editor content when html prop changes (from code editor)
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== html) {
@@ -63,6 +114,42 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
     }
   }, [html]);
 
+    useEffect(() => {
+    if (!editorRef.current) return;
+    if (codeCursorElementRef.current) {
+      codeCursorElementRef.current.removeAttribute('data-code-cursor');
+      codeCursorElementRef.current = null;
+    }
+    if (codeCursorIndex == null) return;
+    const marker = 'CODE_CURSOR_MARKER';
+    const htmlWithMarker = `${html.slice(0, codeCursorIndex)}<!--${marker}-->${html.slice(
+      codeCursorIndex,
+    )}`;
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlWithMarker, 'text/html');
+    const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_COMMENT);
+    let markerNode = null;
+    while (walker.nextNode()) {
+      if (walker.currentNode.data === marker) {
+        markerNode = walker.currentNode;
+        break;
+      }
+    }
+    if (!markerNode) return;
+    let target = markerNode.parentElement || doc.body;
+    if (target === doc.body && doc.body.firstChild) {
+      target = doc.body.firstChild;
+    }
+    const path = getNodePath(target, doc.body);
+    const actualNode = getNodeFromPath(editorRef.current, path);
+    const actualElement =
+      actualNode?.nodeType === Node.ELEMENT_NODE ? actualNode : actualNode?.parentElement;
+    if (actualElement) {
+      actualElement.setAttribute('data-code-cursor', 'true');
+      codeCursorElementRef.current = actualElement;
+    }
+  }, [codeCursorIndex, html]);
+  
   const handleInput = useCallback(() => {
     if (editorRef.current) {
       normalizeTableImages();
@@ -140,11 +227,29 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
     [selectedButton],
   );
 
+const updateCursorFromSelection = useCallback(() => {
+    if (!onCursorChange || !editorRef.current) return;
+    const selection = window.getSelection();
+    if (!selection?.rangeCount) return;
+    const range = selection.getRangeAt(0);
+    if (!editorRef.current.contains(range.commonAncestorContainer)) return;
+    const anchorNode = selection.anchorNode;
+    const element =
+      anchorNode?.nodeType === Node.ELEMENT_NODE ? anchorNode : anchorNode?.parentElement;
+    if (!element) return;
+    const line = getLineNumberForElement(html, element);
+    if (!line) return;
+    onCursorChange({ line, source: 'preview' });
+  }, [getLineNumberForElement, html, onCursorChange]);
+
   useEffect(() => {
-    const handleSelectionChange = () => updateActiveLink();
+    const handleSelectionChange = () => {
+      updateActiveLink();
+      updateCursorFromSelection();
+    };
     document.addEventListener('selectionchange', handleSelectionChange);
     return () => document.removeEventListener('selectionchange', handleSelectionChange);
-  }, [updateActiveLink]);
+  }, [updateActiveLink, updateCursorFromSelection]);
 
   const applyLinkStyles = (link, { isButton = false } = {}) => {
     if (!link) return;
@@ -1049,6 +1154,11 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
         .table-cell-selected {
           outline: 2px solid #3b82f6 !important;
           outline-offset: -2px;
+        }
+        [data-code-cursor="true"] {
+          outline: 2px dashed #6366f1;
+          outline-offset: 2px;
+          background-color: rgba(99, 102, 241, 0.08);
         }
           .prose table {
           background-color: #ffffff;

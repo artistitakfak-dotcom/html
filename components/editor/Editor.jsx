@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CodeEditor from '@/components/editor/CodeEditor';
 import PreviewPanel from '@/components/editor/PreviewPanel';
+import { cleanHtml } from "@/lib/cleanHtml";
 
 const defaultHtml = `<h2>Welcome To The HTML Editor!</h2>
 
@@ -50,6 +51,11 @@ export default function Editor() {
   const [htmlCode, setHtmlCode] = useState(defaultHtml);
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [activeView, setActiveView] = useState('split');
+    const [cursorState, setCursorState] = useState({
+    index: 0,
+    line: 1,
+    source: 'code',
+  });
   const historyRef = useRef({ past: [], future: [] });
   const isHistoryActionRef = useRef(false);
 
@@ -75,10 +81,17 @@ export default function Editor() {
     setHtmlCode(newHtml);
   }, [recordHistory]);
 
-  const handleClear = () => {
-    recordHistory('');
-    setHtmlCode('');
-  };
+  const handleClean = useCallback(
+    (options) => {
+      const cleanedHtml = cleanHtml(htmlCode, options);
+      if (cleanedHtml === htmlCode) {
+        return;
+      }
+      recordHistory(cleanedHtml);
+      setHtmlCode(cleanedHtml);
+    },
+    [htmlCode, recordHistory],
+  );
 
   const handleUndo = useCallback(() => {
     const { past } = historyRef.current;
@@ -101,6 +114,15 @@ export default function Editor() {
     isHistoryActionRef.current = true;
     setHtmlCode(nextValue);
   }, [htmlCode]);
+
+    const handleCursorChange = useCallback((cursor) => {
+    if (!cursor) return;
+    setCursorState((prev) => ({
+      index: cursor.index ?? prev.index,
+      line: cursor.line ?? prev.line,
+      source: cursor.source ?? prev.source,
+    }));
+  }, []);
 
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-slate-100 to-slate-200">
@@ -168,7 +190,10 @@ export default function Editor() {
             <CodeEditor
               value={htmlCode}
               onChange={handleCodeChange}
-              onClear={handleClear}
+              onClean={handleClean}
+              onCursorChange={handleCursorChange}
+              activeLine={cursorState.line}
+              cursorSource={cursorState.source}
             />
           </motion.div>
         )}
@@ -193,6 +218,8 @@ export default function Editor() {
               onHtmlChange={handlePreviewChange}
               onUndo={handleUndo}
               onRedo={handleRedo}
+              onCursorChange={handleCursorChange}
+              codeCursorIndex={cursorState.source === 'code' ? cursorState.index : null}
               />
           </motion.div>
         )}
