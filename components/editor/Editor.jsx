@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CodeEditor from '@/components/editor/CodeEditor';
 import PreviewPanel from '@/components/editor/PreviewPanel';
+import { cleanHtml } from "@/lib/cleanHtml";
 
 const defaultHtml = `<h2>Welcome To The HTML Editor!</h2>
 
@@ -80,10 +81,17 @@ export default function Editor() {
     setHtmlCode(newHtml);
   }, [recordHistory]);
 
-  const handleClear = () => {
-    recordHistory('');
-    setHtmlCode('');
-  };
+  const handleClean = useCallback(
+    (options) => {
+      const cleanedHtml = cleanHtml(htmlCode, options);
+      if (cleanedHtml === htmlCode) {
+        return;
+      }
+      recordHistory(cleanedHtml);
+      setHtmlCode(cleanedHtml);
+    },
+    [htmlCode, recordHistory],
+  );
 
   const handleUndo = useCallback(() => {
     const { past } = historyRef.current;
@@ -182,7 +190,7 @@ export default function Editor() {
             <CodeEditor
               value={htmlCode}
               onChange={handleCodeChange}
-              onClear={handleClear}
+              onClean={handleClean}
               onCursorChange={handleCursorChange}
               activeLine={cursorState.line}
               cursorSource={cursorState.source}

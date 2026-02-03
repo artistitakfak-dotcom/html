@@ -1,20 +1,26 @@
 "use client"
 
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Copy, Download, Trash2 } from 'lucide-react';
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Copy, Download, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { cleanOptionList, defaultCleanOptions } from "@/lib/cleanHtml";
 
 export default function CodeEditor({
   value,
   onChange,
-  onClear,
+  onClean,
   onCursorChange,
   activeLine,
   cursorSource,
 }) {
   const textareaRef = useRef(null);
   const lineNumbersRef = useRef(null);
+  const [cleanDialogOpen, setCleanDialogOpen] = useState(false);
+  const [cleanOptions, setCleanOptions] = useState(() => ({ ...defaultCleanOptions }));
 
   const lineCount = value.split('\n').length;
 
@@ -40,6 +46,17 @@ export default function CodeEditor({
     toast.success('File downloaded');
   };
 
+  const handleDefaultOptions = () => {
+    setCleanOptions({ ...defaultCleanOptions });
+  };
+
+  const handleClean = () => {
+    if (onClean) {
+      onClean(cleanOptions);
+    }
+    setCleanDialogOpen(false);
+  };
+
   const handleKeyDown = (e) => {
     if (e.key === 'Tab') {
       e.preventDefault();
@@ -60,7 +77,7 @@ export default function CodeEditor({
     }
   };
 
-    const updateCursor = useCallback(
+  const updateCursor = useCallback(
     (target) => {
       if (!onCursorChange || !target) return;
       const index = target.selectionStart ?? 0;
@@ -117,14 +134,59 @@ export default function CodeEditor({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2 text-slate-400 hover:text-red-400 hover:bg-slate-700"
-            onClick={onClear}
+            className="h-7 px-2 text-slate-400 hover:text-emerald-300 hover:bg-slate-700"
+            onClick={() => setCleanDialogOpen(true)}
           >
-            <Trash2 className="h-3.5 w-3.5 mr-1" />
-            <span className="text-xs">Clear</span>
+            <Sparkles className="h-3.5 w-3.5 mr-1" />
+            <span className="text-xs">Clean</span>
           </Button>
         </div>
       </div>
+
+      <Dialog open={cleanDialogOpen} onOpenChange={setCleanDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-slate-800">Cleaning Options</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3">
+            {cleanOptionList.map((option) => (
+              <div key={option.key} className="flex items-center gap-3">
+                <Checkbox
+                  id={`clean-option-${option.key}`}
+                  checked={cleanOptions[option.key]}
+                  onCheckedChange={(checked) =>
+                    setCleanOptions((prev) => ({
+                      ...prev,
+                      [option.key]: Boolean(checked),
+                    }))
+                  }
+                />
+                <Label
+                  htmlFor={`clean-option-${option.key}`}
+                  className="text-sm text-slate-700"
+                >
+                  {option.label}
+                </Label>
+              </div>
+            ))}
+          </div>
+          <DialogFooter className="mt-4 gap-2 sm:gap-0">
+            <Button variant="secondary" size="sm" onClick={handleDefaultOptions}>
+              Default
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCleanDialogOpen(false)}
+            >
+              Close
+            </Button>
+            <Button size="sm" onClick={handleClean}>
+              Clean
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       
       {/* Editor Area */}
       <div className="flex flex-1 overflow-hidden">
