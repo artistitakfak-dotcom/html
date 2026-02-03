@@ -45,6 +45,53 @@ export default function PreviewPanel({
   const [resizing, setResizing] = useState(null);
   const [isSelecting, setIsSelecting] = useState(false);
 
+  const addLineBreaksToHtml = (rawHtml) => {
+    if (!rawHtml) return rawHtml;
+    const blockTags = [
+      'address',
+      'article',
+      'aside',
+      'blockquote',
+      'div',
+      'dl',
+      'dt',
+      'dd',
+      'fieldset',
+      'figcaption',
+      'figure',
+      'footer',
+      'form',
+      'h1',
+      'h2',
+      'h3',
+      'h4',
+      'h5',
+      'h6',
+      'header',
+      'hr',
+      'li',
+      'main',
+      'nav',
+      'ol',
+      'p',
+      'pre',
+      'section',
+      'table',
+      'thead',
+      'tbody',
+      'tfoot',
+      'tr',
+      'ul',
+    ];
+    const blockCloseRegex = new RegExp(`</(${blockTags.join('|')})>`, 'gi');
+    const breakRegex = /<br\s*\/?>/gi;
+    return rawHtml
+      .replace(blockCloseRegex, '</$1>\n')
+      .replace(breakRegex, '<br>\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  };
+
     const normalizeTableImages = () => {
     if (!editorRef.current) return;
     const cells = editorRef.current.querySelectorAll('td, th');
@@ -154,9 +201,9 @@ export default function PreviewPanel({
     if (editorRef.current) {
       normalizeTableImages();
       makeButtonsResizable();
-      onHtmlChange(editorRef.current.innerHTML);
+      onHtmlChange(addLineBreaksToHtml(editorRef.current.innerHTML));
     }
-  }, [normalizeTableImages, onHtmlChange]);
+  }, [normalizeTableImages, onHtmlChange, addLineBreaksToHtml]);
 
     const getSelectionTextColor = () => {
     const selection = window.getSelection();
