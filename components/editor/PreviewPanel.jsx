@@ -1049,7 +1049,6 @@ export default function PreviewPanel({ html, onHtmlChange, onUndo, onRedo }) {
         .table-cell-selected {
           outline: 2px solid #3b82f6 !important;
           outline-offset: -2px;
-          background-color: rgba(59, 130, 246, 0.1) !important;
         }
           .prose table {
           background-color: #ffffff;
