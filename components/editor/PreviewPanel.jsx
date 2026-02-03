@@ -31,6 +31,7 @@ export default function PreviewPanel({
   const editorRef = useRef(null);
   const savedSelectionRef = useRef(null);
   const codeCursorElementRef = useRef(null);
+  const pendingSelectionRef = useRef(null);
   const [tableDialogOpen, setTableDialogOpen] = useState(false);
   const [tablePropertiesOpen, setTablePropertiesOpen] = useState(false);
   const [cellPropertiesOpen, setCellPropertiesOpen] = useState(false);
@@ -44,6 +45,101 @@ export default function PreviewPanel({
   const [activeLink, setActiveLink] = useState(null);
   const [resizing, setResizing] = useState(null);
   const [isSelecting, setIsSelecting] = useState(false);
+
+  const addLineBreaksToHtml = (rawHtml) => {
+    if (!rawHtml) return rawHtml;
+    const blockTags = [
+      'address',
+      'article',
+      'aside',
+      'blockquote',
+      'div',
+      'dl',
+      'dt',
+      'dd',
+      'fieldset',
+      'figcaption',
+      'figure',
+      'footer',
+      'form',
+      'h1',
+      'h2',
+      'h3',
+      'h4',
+      'h5',
+      'h6',
+      'header',
+      'hr',
+      'li',
+      'main',
+      'nav',
+      'ol',
+      'p',
+      'pre',
+      'section',
+      'table',
+      'thead',
+      'tbody',
+      'tfoot',
+      'tr',
+      'ul',
+    ];
+    const blockCloseRegex = new RegExp(`</(${blockTags.join('|')})>`, 'gi');
+    const breakRegex = /<br\s*\/?>/gi;
+    return rawHtml
+      .replace(blockCloseRegex, '</$1>\n')
+      .replace(breakRegex, '<br>\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  };
+
+  const getSelectionOffsets = (root) => {
+    const selection = window.getSelection();
+    if (!selection?.rangeCount) return null;
+    const range = selection.getRangeAt(0);
+    if (!root.contains(range.commonAncestorContainer)) return null;
+
+    const getOffsetForPoint = (targetNode, targetOffset) => {
+      const preRange = document.createRange();
+      preRange.selectNodeContents(root);
+      preRange.setEnd(targetNode, targetOffset);
+      return preRange.toString().length;
+    };
+
+    return {
+      start: getOffsetForPoint(range.startContainer, range.startOffset),
+      end: getOffsetForPoint(range.endContainer, range.endOffset),
+    };
+  };
+
+  const restoreSelectionOffsets = (root, offsets) => {
+    if (!offsets) return;
+    const selection = window.getSelection();
+    if (!selection) return;
+
+    const resolvePoint = (targetOffset) => {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let offset = 0;
+      let current = walker.nextNode();
+      while (current) {
+        const length = current.textContent?.length ?? 0;
+        if (offset + length >= targetOffset) {
+          return { node: current, offset: Math.max(0, targetOffset - offset) };
+        }
+        offset += length;
+        current = walker.nextNode();
+      }
+      return { node: root, offset: root.childNodes.length };
+    };
+
+    const startPoint = resolvePoint(offsets.start);
+    const endPoint = resolvePoint(offsets.end);
+    const range = document.createRange();
+    range.setStart(startPoint.node, startPoint.offset);
+    range.setEnd(endPoint.node, endPoint.offset);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  };
 
     const normalizeTableImages = () => {
     if (!editorRef.current) return;
@@ -111,6 +207,10 @@ export default function PreviewPanel({
       editorRef.current.innerHTML = html;
       makeTablesResizable();
       makeButtonsResizable();
+      if (pendingSelectionRef.current) {
+        restoreSelectionOffsets(editorRef.current, pendingSelectionRef.current);
+        pendingSelectionRef.current = null;
+      }
     }
   }, [html]);
 
@@ -152,11 +252,12 @@ export default function PreviewPanel({
   
   const handleInput = useCallback(() => {
     if (editorRef.current) {
+      pendingSelectionRef.current = getSelectionOffsets(editorRef.current);
       normalizeTableImages();
       makeButtonsResizable();
-      onHtmlChange(editorRef.current.innerHTML);
+      onHtmlChange(addLineBreaksToHtml(editorRef.current.innerHTML));
     }
-  }, [normalizeTableImages, onHtmlChange]);
+  }, [normalizeTableImages, onHtmlChange, addLineBreaksToHtml]);
 
     const getSelectionTextColor = () => {
     const selection = window.getSelection();
