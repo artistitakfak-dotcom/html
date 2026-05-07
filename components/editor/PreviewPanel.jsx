@@ -160,26 +160,7 @@ export default function PreviewPanel({
 
   const handleExportPdf = useCallback(() => {
     if (!editorRef.current) return;
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
-    if (!printWindow) return;
-    const printableHtml = editorRef.current.innerHTML;
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>HTML Preview</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 24px; }
-            table { border-collapse: collapse; max-width: 100%; }
-            img { max-width: 100%; height: auto; }
-            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          </style>
-        </head>
-        <body>${printableHtml}</body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
+    window.print();
   }, []);
 
     const getSelectionTextColor = () => {
@@ -1204,8 +1185,45 @@ const updateCursorFromSelection = useCallback(() => {
         .prose li {
           margin: 0.25rem 0;
         }
-                .prose li::marker {
+        .prose li::marker {
           color: var(--list-marker-color, currentColor);
+        }
+        @media print {
+          header,
+          footer,
+          [role="tablist"],
+          .flex.items-center.gap-1.p-2.border-b.bg-white.flex-wrap,
+          .border-b.bg-slate-50,
+          .w-1.bg-slate-300 {
+            display: none !important;
+          }
+          .h-screen,
+          .flex-1,
+          .overflow-hidden,
+          .overflow-auto {
+            overflow: visible !important;
+            height: auto !important;
+          }
+          .bg-slate-50,
+          .bg-slate-100,
+          .bg-slate-200 {
+            background: #ffffff !important;
+          }
+          .shadow-sm,
+          .shadow-xl,
+          .border {
+            box-shadow: none !important;
+          }
+          .prose {
+            max-width: 100% !important;
+          }
+          .prose table {
+            page-break-inside: avoid;
+          }
+          * {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
         }
       `}</style>
       
