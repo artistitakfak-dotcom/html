@@ -158,6 +158,30 @@ export default function PreviewPanel({
     }
   }, [normalizeTableImages, onHtmlChange]);
 
+  const handleExportPdf = useCallback(() => {
+    if (!editorRef.current) return;
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
+    if (!printWindow) return;
+    const printableHtml = editorRef.current.innerHTML;
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>HTML Preview</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 24px; }
+            table { border-collapse: collapse; max-width: 100%; }
+            img { max-width: 100%; height: auto; }
+            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          </style>
+        </head>
+        <body>${printableHtml}</body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  }, []);
+
     const getSelectionTextColor = () => {
     const selection = window.getSelection();
     const anchorNode = selection?.anchorNode;
@@ -1197,6 +1221,7 @@ const updateCursorFromSelection = useCallback(() => {
         onBgColor={handleBgColor}
         onDocumentBgColor={handleDocumentBgColor}
         onListMarkerColor={handleListMarkerColor}
+        onExportPdf={handleExportPdf}
       />
       {activeLink && (
         <div className="flex flex-wrap items-center gap-2 border-b bg-slate-50 px-3 py-2 text-xs text-slate-600">
