@@ -51,13 +51,16 @@ export default function Editor() {
   const [htmlCode, setHtmlCode] = useState(defaultHtml);
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [activeView, setActiveView] = useState('split');
-    const [cursorState, setCursorState] = useState({
+  const [leftPanelWidth, setLeftPanelWidth] = useState(45);
+  const [isResizing, setIsResizing] = useState(false);
+  const [cursorState, setCursorState] = useState({
     index: 0,
     line: 1,
     source: 'code',
   });
   const historyRef = useRef({ past: [], future: [] });
   const isHistoryActionRef = useRef(false);
+  const editorAreaRef = useRef(null);
 
   const recordHistory = useCallback((nextValue) => {
     if (isHistoryActionRef.current) {
@@ -115,13 +118,38 @@ export default function Editor() {
     setHtmlCode(nextValue);
   }, [htmlCode]);
 
-    const handleCursorChange = useCallback((cursor) => {
+  const handleCursorChange = useCallback((cursor) => {
     if (!cursor) return;
     setCursorState((prev) => ({
       index: cursor.index ?? prev.index,
       line: cursor.line ?? prev.line,
       source: cursor.source ?? prev.source,
     }));
+  }, []);
+
+  const handleDividerMouseDown = useCallback((event) => {
+    event.preventDefault();
+    setIsResizing(true);
+
+    const handleMouseMove = (moveEvent) => {
+      if (!editorAreaRef.current) {
+        return;
+      }
+      const rect = editorAreaRef.current.getBoundingClientRect();
+      const pointerPosition = moveEvent.clientX - rect.left;
+      const nextWidthPercent = (pointerPosition / rect.width) * 100;
+      const clampedWidthPercent = Math.min(80, Math.max(20, nextWidthPercent));
+      setLeftPanelWidth(clampedWidthPercent);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
   }, []);
 
   return (
@@ -175,13 +203,13 @@ export default function Editor() {
       </header>
 
       {/* Main Editor Area */}
-      <div className="flex-1 flex overflow-hidden p-4 gap-4">
+      <div ref={editorAreaRef} className="flex-1 flex overflow-hidden p-4 gap-4">
         {/* Code Editor Panel */}
         {(activeView === 'code' || activeView === 'split') && (
           <motion.div
             initial={false}
             animate={{
-              width: activeView === 'code' ? '100%' : leftPanelCollapsed ? '0%' : '45%',
+              width: activeView === 'code' ? '100%' : leftPanelCollapsed ? '0%' : `${leftPanelWidth}%`,
               opacity: leftPanelCollapsed && activeView === 'split' ? 0 : 1,
             }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
@@ -200,7 +228,12 @@ export default function Editor() {
 
         {/* Divider with drag handle */}
         {activeView === 'split' && !leftPanelCollapsed && (
-          <div className="w-1 bg-slate-300 rounded-full hover:bg-blue-400 cursor-col-resize transition-colors" />
+          <div
+            onMouseDown={handleDividerMouseDown}
+            className={`w-1 rounded-full cursor-col-resize transition-colors ${
+              isResizing ? 'bg-blue-500' : 'bg-slate-300 hover:bg-blue-400'
+            }`}
+          />
         )}
 
         {/* Preview Panel */}
@@ -208,7 +241,7 @@ export default function Editor() {
           <motion.div
             initial={false}
             animate={{
-              width: activeView === 'preview' ? '100%' : leftPanelCollapsed ? '100%' : '55%',
+              width: activeView === 'preview' ? '100%' : leftPanelCollapsed ? '100%' : `${100 - leftPanelWidth}%`,
             }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
             className="overflow-hidden"
