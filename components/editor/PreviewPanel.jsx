@@ -381,16 +381,37 @@ const updateCursorFromSelection = useCallback(() => {
     handleInput();
     };
 
-  const wrapSelectionWithSpan = (styleUpdater) => {
+  const clearStyleFromFragment = (fragment, styleProperty) => {
+    const elementNodes = [];
+    if (fragment.nodeType === Node.ELEMENT_NODE) {
+      elementNodes.push(fragment);
+    }
+
+    const walker = document.createTreeWalker(fragment, NodeFilter.SHOW_ELEMENT);
+    while (walker.nextNode()) {
+      elementNodes.push(walker.currentNode);
+    }
+
+    elementNodes.forEach((node) => {
+      node.style.removeProperty(styleProperty);
+      if (!node.getAttribute('style')) {
+        node.removeAttribute('style');
+      }
+    });
+  };
+
+  const wrapSelectionWithSpan = (styleProperty, styleValue) => {
     const selection = window.getSelection();
     if (!selection.rangeCount || selection.isCollapsed) return;
 
     const range = selection.getRangeAt(0);
     if (!editorRef.current?.contains(range.commonAncestorContainer)) return;
 
-    const span = document.createElement('span');
-    styleUpdater(span);
     const contents = range.extractContents();
+    clearStyleFromFragment(contents, styleProperty);
+
+    const span = document.createElement('span');
+    span.style.setProperty(styleProperty, styleValue);
     span.appendChild(contents);
     range.insertNode(span);
     selection.removeAllRanges();
@@ -401,15 +422,11 @@ const updateCursorFromSelection = useCallback(() => {
   };
 
   const handleFontSize = (size) => {
-    wrapSelectionWithSpan((span) => {
-      span.style.fontSize = `${size}px`;
-    });
+    wrapSelectionWithSpan('font-size', `${size}px`);
   };
 
   const handleFontFamily = (font) => {
-    wrapSelectionWithSpan((span) => {
-      span.style.fontFamily = font;
-    });
+    wrapSelectionWithSpan('font-family', font);
   };
 
   const handleTextColor = (color) => {
