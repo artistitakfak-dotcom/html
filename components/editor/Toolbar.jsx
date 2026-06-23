@@ -45,6 +45,7 @@ import {
   Image,
   Minus,
   Square,
+  FileDown,
 } from 'lucide-react';
 import ColorPicker from './ColorPicker';
 
@@ -96,6 +97,7 @@ export default function Toolbar({
   onDocumentBgColor,
   onListMarkerColor,
   onInsertButton,
+  onExportPdf,
 }) {
   const handleMenuFormat = (tag, fontSize) => (event) => {
     event.preventDefault();
@@ -273,6 +275,7 @@ export default function Toolbar({
       <ToolbarButton icon={Link} tooltip="Insert Link" onClick={() => onFormat('createLink')} />
       <ToolbarButton icon={Image} tooltip="Insert Image" onClick={() => onFormat('insertImage')} />
       <ToolbarButton icon={Minus} tooltip="Horizontal Line" onClick={() => onFormat('insertHorizontalRule')} />
+      <ToolbarButton icon={FileDown} tooltip="Save as PDF" onClick={onExportPdf} />
     </div>
   );
 }

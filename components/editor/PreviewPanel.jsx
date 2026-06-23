@@ -158,6 +158,11 @@ export default function PreviewPanel({
     }
   }, [normalizeTableImages, onHtmlChange]);
 
+  const handleExportPdf = useCallback(() => {
+    if (!editorRef.current) return;
+    window.print();
+  }, []);
+
     const getSelectionTextColor = () => {
     const selection = window.getSelection();
     const anchorNode = selection?.anchorNode;
@@ -1180,8 +1185,45 @@ const updateCursorFromSelection = useCallback(() => {
         .prose li {
           margin: 0.25rem 0;
         }
-                .prose li::marker {
+        .prose li::marker {
           color: var(--list-marker-color, currentColor);
+        }
+        @media print {
+          header,
+          footer,
+          [role="tablist"],
+          .flex.items-center.gap-1.p-2.border-b.bg-white.flex-wrap,
+          .border-b.bg-slate-50,
+          .w-1.bg-slate-300 {
+            display: none !important;
+          }
+          .h-screen,
+          .flex-1,
+          .overflow-hidden,
+          .overflow-auto {
+            overflow: visible !important;
+            height: auto !important;
+          }
+          .bg-slate-50,
+          .bg-slate-100,
+          .bg-slate-200 {
+            background: #ffffff !important;
+          }
+          .shadow-sm,
+          .shadow-xl,
+          .border {
+            box-shadow: none !important;
+          }
+          .prose {
+            max-width: 100% !important;
+          }
+          .prose table {
+            page-break-inside: avoid;
+          }
+          * {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
         }
       `}</style>
       
@@ -1197,6 +1239,7 @@ const updateCursorFromSelection = useCallback(() => {
         onBgColor={handleBgColor}
         onDocumentBgColor={handleDocumentBgColor}
         onListMarkerColor={handleListMarkerColor}
+        onExportPdf={handleExportPdf}
       />
       {activeLink && (
         <div className="flex flex-wrap items-center gap-2 border-b bg-slate-50 px-3 py-2 text-xs text-slate-600">
